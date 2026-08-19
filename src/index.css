@@ -1,0 +1,188 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@layer base {
+  body {
+    @apply text-slate-100 antialiased selection:bg-indigo-500 selection:text-white min-h-screen;
+    background-color: #0B1120;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    /* Subtle layered background */
+    background-image: 
+      radial-gradient(circle at 15% 10%, rgba(30, 41, 59, 0.4) 0%, transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(15, 23, 42, 0.6) 0%, transparent 40%),
+      radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.02) 0%, transparent 60%);
+    background-attachment: fixed;
+  }
+}
+
+/* Base surface elements */
+.surface-card, .glass-card {
+  background-color: #111827;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
+}
+
+.surface-panel, .glass-panel {
+  background-color: #0F172A;
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  border-radius: 14px;
+}
+
+/* Button Tokens */
+.btn-primary {
+  @apply bg-indigo-600 text-white font-medium px-4 py-2 flex items-center justify-center gap-2;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.15);
+  transition: all 0.2s ease-out;
+}
+
+.btn-primary:hover {
+  @apply bg-indigo-500;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-primary:disabled {
+  @apply bg-indigo-900/50 text-indigo-300/50 cursor-not-allowed shadow-none;
+  transform: none;
+}
+
+.btn-secondary {
+  @apply bg-slate-800 border border-slate-700 text-slate-200 font-medium px-4 py-2 flex items-center justify-center gap-2;
+  border-radius: 10px;
+  transition: all 0.2s ease-out;
+}
+
+.btn-secondary:hover {
+  @apply bg-slate-700 text-white border-slate-600;
+  transform: translateY(-1px);
+}
+
+.btn-secondary:active {
+  transform: scale(0.98);
+}
+
+.btn-danger {
+  @apply bg-rose-600/10 border border-rose-500/30 text-rose-500 font-medium px-4 py-2 flex items-center justify-center gap-2;
+  border-radius: 10px;
+  transition: all 0.2s ease-out;
+}
+
+.btn-danger:hover {
+  @apply bg-rose-500 text-white border-rose-500;
+  box-shadow: 0 4px 14px rgba(244, 63, 94, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-success {
+  @apply bg-emerald-600/10 border border-emerald-500/30 text-emerald-500 font-medium px-4 py-2 flex items-center justify-center gap-2;
+  border-radius: 10px;
+  transition: all 0.2s ease-out;
+}
+
+.btn-success:hover {
+  @apply bg-emerald-500 text-white border-emerald-500;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+  transform: translateY(-1px);
+}
+
+/* Forms */
+.form-input {
+  @apply w-full bg-[#172033] border border-slate-800 text-slate-100 px-4;
+  border-radius: 10px;
+  height: 44px;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  @apply border-indigo-500 outline-none;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2);
+}
+
+.form-input:disabled {
+  @apply bg-slate-900/50 text-slate-500 cursor-not-allowed border-slate-800/50;
+}
+
+/* Animations */
+@keyframes fadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.4s ease-out forwards;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Custom Range Input / Touch Slider (for Judges) */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+}
+
+input[type="range"]:focus {
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  background: #1E293B;
+  border-radius: 9999px;
+  height: 8px;
+}
+
+input[type="range"]::-moz-range-track {
+  background: #1E293B;
+  border-radius: 9999px;
+  height: 8px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -6px;
+  background: #4F46E5;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  transition: transform 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  background: #6366F1;
+}
+
+input[type="range"]::-moz-range-thumb {
+  appearance: none;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: #4F46E5;
+  border: 2px solid #ffffff;
+}
+
+/* Backwards compatibility removed as classes are combined above */

@@ -1,0 +1,341 @@
+import React, { useState, useEffect } from 'react';
+import { ShieldCheck, UserCheck, Users, Gavel, ArrowRight, Sparkles, AlertCircle, Eye, EyeOff, ChevronLeft } from 'lucide-react';
+
+export default function LoginView({ onLoginSuccess }) {
+  // viewState can be: 'HOME', 'PARTICIPANT_LOGIN', 'AUDIENCE_LOGIN', 'ADMIN_LOGIN', 'JUDGE_LOGIN', 'ADMIN_REGISTER'
+  const [viewState, setViewState] = useState('HOME');
+  
+  const [userId, setUserId] = useState(''); 
+  const [password, setPassword] = useState('');
+  
+  const [audienceEmail, setAudienceEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const [showPassword, setShowPassword] = useState(false);
+
+  const navigateTo = (state) => {
+    setViewState(state);
+    setError(null);
+    setOtpSent(false);
+    setUserId('');
+    setPassword('');
+    setAudienceEmail('');
+    setOtp('');
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, accessCode: password })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Authentication failed.');
+      }
+
+      onLoginSuccess(data.user);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdminRegister = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/register-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: userId, password })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Registration failed.');
+      }
+
+      alert('Admin account created successfully! You can now log in.');
+      navigateTo('ADMIN_LOGIN');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRequestOtp = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/request-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: audienceEmail })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setOtpSent(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: audienceEmail, otp })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      onLoginSuccess(data.user);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const RoleCard = ({ icon: Icon, title, desc, onClick }) => (
+    <button 
+      onClick={onClick}
+      className="group w-full text-left p-5 surface-card hover:border-indigo-500/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(79,70,229,0.1)] flex items-center justify-between"
+    >
+      <div className="flex items-center gap-4">
+        <div className="w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center text-slate-400 group-hover:text-indigo-400 group-hover:bg-indigo-500/10 transition-colors">
+          <Icon className="w-5 h-5" />
+        </div>
+        <div>
+          <h4 className="font-semibold text-slate-100 text-[15px] group-hover:text-indigo-50 transition-colors">{title}</h4>
+          <p className="text-[12px] text-slate-400 mt-0.5">{desc}</p>
+        </div>
+      </div>
+      <ArrowRight className="w-4 h-4 text-slate-600 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
+    </button>
+  );
+
+  return (
+    <div className="min-h-[85vh] flex items-center justify-center p-4 animate-fade-up">
+      <div className="w-full max-w-lg surface-panel p-8 sm:p-10 relative overflow-hidden shadow-2xl">
+        {/* Glow accent */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl translate-y-1/3 -translate-x-1/3 pointer-events-none"></div>
+
+        {/* Branding */}
+        <div className="text-center space-y-2 mb-10 relative z-10">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-300 text-[10px] font-bold tracking-wider mb-2">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>EVENT VOTING SYSTEM</span>
+          </div>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">
+            EduInspire’26
+          </h1>
+          <p className="text-sm text-slate-400">
+            Secure voting and evaluation platform
+          </p>
+        </div>
+
+        {error && (
+          <div className="mb-6 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-sm flex items-start gap-2 relative z-10">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <div className="relative z-10">
+          {viewState === 'HOME' && (
+            <div className="space-y-3">
+              <RoleCard 
+                icon={ShieldCheck} 
+                title="Admin" 
+                desc="Management and event control" 
+                onClick={() => navigateTo('ADMIN_LOGIN')}
+              />
+              <RoleCard 
+                icon={Gavel} 
+                title="Judge" 
+                desc="Evaluation and scoring" 
+                onClick={() => navigateTo('JUDGE_LOGIN')}
+              />
+              <RoleCard 
+                icon={UserCheck} 
+                title="Participant" 
+                desc="Team voting" 
+                onClick={() => navigateTo('PARTICIPANT_LOGIN')}
+              />
+              <RoleCard 
+                icon={Users} 
+                title="Audience" 
+                desc="Audience voting" 
+                onClick={() => navigateTo('AUDIENCE_LOGIN')}
+              />
+            </div>
+          )}
+
+          {['PARTICIPANT_LOGIN', 'ADMIN_LOGIN', 'JUDGE_LOGIN'].includes(viewState) && (
+            <div className="space-y-5 animate-fade-up">
+              <button onClick={() => navigateTo('HOME')} className="text-[13px] text-slate-400 hover:text-white flex items-center gap-1 mb-2 transition-colors">
+                <ChevronLeft className="w-4 h-4" /> Back to roles
+              </button>
+              
+              <div className="mb-6">
+                <h2 className="text-xl font-bold text-white">
+                  {viewState === 'ADMIN_LOGIN' ? 'Admin Login' : viewState === 'JUDGE_LOGIN' ? 'Judge Login' : 'Participant Login'}
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">Please enter your credentials to continue.</p>
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-5">
+                <div>
+                  <label className="block text-[13px] font-medium text-slate-300 mb-1.5">
+                    {viewState === 'ADMIN_LOGIN' ? 'Admin Username' : 'Email or User ID'}
+                  </label>
+                  <input
+                    type="text" required
+                    placeholder={viewState === 'ADMIN_LOGIN' ? 'Enter admin username' : 'Enter your Email or User ID (e.g. P001)'}
+                    value={userId} onChange={e => setUserId(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-slate-300 mb-1.5">Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"} required placeholder="Enter Password"
+                      value={password} onChange={e => setPassword(e.target.value)}
+                      className="form-input pr-10"
+                    />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors">
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <button type="submit" disabled={loading} className="btn-primary w-full mt-2">
+                  {loading ? 'Authenticating...' : 'Sign In'}
+                </button>
+                
+                {viewState === 'ADMIN_LOGIN' && (
+                  <div className="text-center pt-4 border-t border-slate-800/50 mt-6">
+                    <button type="button" onClick={() => navigateTo('ADMIN_REGISTER')} className="text-[13px] text-slate-400 hover:text-indigo-400 transition-colors">
+                      Register a new Admin account
+                    </button>
+                  </div>
+                )}
+              </form>
+            </div>
+          )}
+
+          {viewState === 'ADMIN_REGISTER' && (
+            <div className="space-y-5 animate-fade-up">
+              <button onClick={() => navigateTo('ADMIN_LOGIN')} className="text-[13px] text-slate-400 hover:text-white flex items-center gap-1 mb-2 transition-colors">
+                <ChevronLeft className="w-4 h-4" /> Back to Login
+              </button>
+              
+              <div className="mb-6">
+                <h2 className="text-xl font-bold text-white">Register Admin</h2>
+                <p className="text-xs text-slate-400 mt-1">Create a new administrator account.</p>
+              </div>
+
+              <form onSubmit={handleAdminRegister} className="space-y-5">
+                <div>
+                  <label className="block text-[13px] font-medium text-slate-300 mb-1.5">New Admin Username</label>
+                  <input
+                    type="text" required placeholder="Choose a username"
+                    value={userId} onChange={e => setUserId(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[13px] font-medium text-slate-300 mb-1.5">New Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"} required placeholder="Choose a password"
+                      value={password} onChange={e => setPassword(e.target.value)}
+                      className="form-input pr-10"
+                    />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors">
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <button type="submit" disabled={loading} className="btn-primary w-full mt-2">
+                  {loading ? 'Creating...' : 'Create Account'}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {viewState === 'AUDIENCE_LOGIN' && (
+            <div className="space-y-5 animate-fade-up">
+              <button onClick={() => navigateTo('HOME')} className="text-[13px] text-slate-400 hover:text-white flex items-center gap-1 mb-2 transition-colors">
+                <ChevronLeft className="w-4 h-4" /> Back to roles
+              </button>
+              
+              <div className="mb-6">
+                <h2 className="text-xl font-bold text-white">Audience Login</h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  {!otpSent ? 'Enter your email to receive a secure OTP code.' : 'Check your email for the verification code.'}
+                </p>
+              </div>
+
+              {!otpSent ? (
+                <form onSubmit={handleRequestOtp} className="space-y-5">
+                  <div>
+                    <label className="block text-[13px] font-medium text-slate-300 mb-1.5">Email Address</label>
+                    <input
+                      type="email" required placeholder="Enter your email"
+                      value={audienceEmail} onChange={e => setAudienceEmail(e.target.value)}
+                      className="form-input"
+                    />
+                  </div>
+                  <button type="submit" disabled={loading} className="btn-primary w-full mt-2">
+                    {loading ? 'Sending Code...' : 'Request OTP Code'}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyOtp} className="space-y-5">
+                  <div>
+                    <label className="block text-[13px] font-medium text-slate-300 mb-1.5">Verification Code</label>
+                    <input
+                      type="text" required placeholder="6-digit OTP"
+                      value={otp} onChange={e => setOtp(e.target.value)}
+                      className="form-input text-center tracking-[0.2em] font-mono text-lg"
+                    />
+                    <p className="text-[11px] text-slate-500 mt-2 text-center">Sent to {audienceEmail}</p>
+                  </div>
+                  <button type="submit" disabled={loading} className="btn-primary w-full mt-2">
+                    {loading ? 'Verifying...' : 'Verify & Sign In'}
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
