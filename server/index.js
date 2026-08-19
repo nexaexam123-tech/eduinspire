@@ -150,13 +150,21 @@ app.post('/api/auth/request-otp', async (req, res) => {
   db.prepare('UPDATE users SET otp_code = ?, otp_expiry = ? WHERE id = ?').run(otp, expiry, user.id);
 
   // Configure Nodemailer Transporter
+  // Use port 587 (STARTTLS) by default — more reliable on cloud platforms like Render.
+  // Port 465 (SMTPS) is often blocked by cloud providers on free tier.
+  const smtpPort = parseInt(process.env.SMTP_PORT, 10) || 587;
+  const smtpSecure = smtpPort === 465; // true only for 465 (SSL), false for 587 (STARTTLS)
+
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: process.env.SMTP_PORT || 465,
-    secure: process.env.SMTP_PORT == 465, // true for 465, false for other ports
+    port: smtpPort,
+    secure: smtpSecure,
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false,
     },
   });
 
@@ -180,7 +188,7 @@ app.post('/api/auth/request-otp', async (req, res) => {
   try {
     if (process.env.SMTP_USER && process.env.SMTP_PASS && process.env.SMTP_USER !== 'your-email@gmail.com') {
       await transporter.sendMail(mailOptions);
-      console.log(`[SMTP EMAIL SERVICE] -> Sent to: ${cleanEmail}`);
+      console.log(`[SMTP EMAIL SERVICE] -> Sent to: ${cleanEmail} via port ${smtpPort}`);
     } else {
       console.log(`\n====================================================`);
       console.log(` [MOCK EMAIL SERVICE] -> Sent to: ${cleanEmail}`);
