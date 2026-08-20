@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Lock, CheckCircle2, AlertTriangle, Send, LogOut, Check } from 'lucide-react';
 
+const CATEGORIES = [
+  { id: 'c1', label: '1. Student Impact', max: 20 },
+  { id: 'c2', label: '2. Faculty Impact', max: 10 },
+  { id: 'c3', label: '3. Institutional / Administrative Impact', max: 10 },
+  { id: 'c4', label: '4. Social / Community Impact', max: 10 },
+  { id: 'c5', label: '5. Innovation & Distinctiveness', max: 20 },
+  { id: 'c6', label: '6. Planning & Implementation', max: 15 },
+  { id: 'c7', label: '7. Evidence of Outcomes', max: 10 },
+  { id: 'c8', label: '8. Learning & Replicability', max: 5 },
+];
+
 export default function VoterEvaluationView({ user, onLogout }) {
   const [eventData, setEventData] = useState(null);
   const [teams, setTeams] = useState([]);
@@ -12,6 +23,7 @@ export default function VoterEvaluationView({ user, onLogout }) {
   
   // State for all team scores: { [teamId]: number }
   const [scores, setScores] = useState({});
+  const [categoryScores, setCategoryScores] = useState({});
 
   const fetchData = async () => {
     try {
@@ -44,16 +56,26 @@ export default function VoterEvaluationView({ user, onLogout }) {
     return () => clearInterval(interval);
   }, [user.userId]);
 
-  const handleScoreChange = (teamId, value) => {
-    let val = parseInt(value, 10);
-    if (isNaN(val)) val = '';
-    else if (val < 0) val = 0;
-    else if (val > 100) val = 100;
+  const handleCategoryChange = (teamId, catId, max, value) => {
+    let val = value;
+    if (val !== '') {
+      val = parseInt(value, 10);
+      if (isNaN(val)) val = '';
+      else if (val < 0) val = 0;
+      else if (val > max) val = max;
+    }
     
-    setScores(prev => ({
-      ...prev,
-      [teamId]: val
-    }));
+    setCategoryScores(prevCats => {
+      const teamScores = { ...(prevCats[teamId] || {}) };
+      teamScores[catId] = val;
+      
+      setScores(prevScores => {
+        const total = CATEGORIES.reduce((sum, cat) => sum + (parseInt(teamScores[cat.id]) || 0), 0);
+        return { ...prevScores, [teamId]: total };
+      });
+
+      return { ...prevCats, [teamId]: teamScores };
+    });
   };
 
   const isOwnTeam = (teamId) => {
@@ -271,20 +293,34 @@ export default function VoterEvaluationView({ user, onLogout }) {
                       </div>
                     </div>
 
-                    <div className="space-y-2 pt-1">
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={currentScore}
-                        onChange={(e) => handleScoreChange(team.id, parseInt(e.target.value))}
-                        className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-                      />
-                      <div className="flex justify-between text-[10px] text-slate-500 font-mono font-medium px-1">
-                        <span>0 (Min)</span>
-                        <span>50 (Mid)</span>
-                        <span>100 (Max)</span>
+                    <div className="space-y-4 pt-4 border-t border-slate-700/50 mt-4">
+                      {CATEGORIES.map(cat => {
+                        const catVal = categoryScores[team.id]?.[cat.id];
+                        return (
+                          <div key={cat.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                            <label className="text-sm text-slate-300 font-medium flex-1">{cat.label}</label>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-xs text-slate-500">Enter marks:</span>
+                              <input
+                                type="number"
+                                min="0"
+                                max={cat.max}
+                                value={catVal !== undefined ? catVal : ''}
+                                onChange={(e) => handleCategoryChange(team.id, cat.id, cat.max, e.target.value)}
+                                className="w-16 bg-[#172033] border border-slate-700 rounded-lg p-1.5 text-center text-white font-mono text-sm focus:border-indigo-500 focus:outline-none transition-colors"
+                                placeholder="0"
+                              />
+                              <span className="text-xs text-slate-500 font-mono w-8">/ {cat.max}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div className="flex justify-between items-center pt-3 border-t border-slate-700/50 mt-2">
+                        <span className="text-sm font-bold text-white">TOTAL:</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg font-mono font-bold text-indigo-400">{currentScore}</span>
+                          <span className="text-xs text-slate-500 font-mono w-8">/ 100</span>
+                        </div>
                       </div>
                     </div>
                   </div>

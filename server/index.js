@@ -911,6 +911,83 @@ app.post('/api/credentials/upload-participants', upload.single('file'), (req, re
   }
 });
 
+// Bulk upload audience from Excel
+app.post('/api/credentials/upload-audience', upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
+  try {
+    const workbook = xlsx.readFile(req.file.path);
+    const sheetName = workbook.SheetNames[0];
+    const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    let importedCount = 0;
+    let skippedCount = 0;
+
+    let totalAudience = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'AUDIENCE'").get().count;
+
+    const stmt = db.prepare("INSERT INTO users (user_id, access_code, role, email) VALUES (?, ?, 'AUDIENCE', ?)");
+    const checkStmt = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'AUDIENCE' AND email IS NOT NULL AND LOWER(email) = LOWER(?)");
+
+    const transaction = db.transaction((rows) => {
+      for (const row of rows) {
+        const rawEmail = row['Email'] || row['email'] || row['Email ID'];
+        if (!rawEmail) continue;
+        
+        const email = String(rawEmail).trim();
+        const password = generateAccessCode();
+        
+        const existing = checkStmt.get(email).count;
+        if (existing > 0) {
+          skippedCount++;
+        } else {
+          totalAudience++;
+          const aId = `A${totalAudience.toString().padStart(3, '0')}`;
+          stmt.run(aId, password, email);
+          importedCount++;
+        }
+      }
+    });
+
+    transaction(data);
+    res.json({ success: true, imported: importedCount, skipped: skippedCount });
+  } catch (err) {
+    console.error('Error processing Excel file:', err);
+    res.status(500).json({ error: 'Failed to process the uploaded file. Ensure it is a valid Excel format.' });
+  }
+});
+
+// Export all users to Excel
+app.get('/api/users/export', (req, res) => {
+  try {
+    const users = db.prepare(`
+      SELECT u.role, u.user_id, u.email, u.access_code, t.team_name, t.college_name 
+      FROM users u 
+      LEFT JOIN teams t ON u.team_id = t.id 
+      ORDER BY u.role, u.user_id
+    `).all();
+
+    const data = users.map(u => ({
+      Role: u.role,
+      'User ID': u.user_id,
+      Email: u.email || 'Not provided',
+      Password: u.access_code,
+      'Team Name': u.team_name || 'N/A',
+      'College Name': u.college_name || 'N/A'
+    }));
+
+    const worksheet = xlsx.utils.json_to_sheet(data);
+    const workbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Users');
+
+    const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    
+    res.setHeader('Content-Disposition', 'attachment; filename="users_export.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buffer);
+  } catch (err) {
+    console.error('Export Error:', err);
+    res.status(500).json({ error: 'Failed to export users.' });
+  }
+});
+
 app.post('/api/credentials/generate-audience', (req, res) => {
   const { count } = req.body;
   const numToGen = Math.min(50, Math.max(1, parseInt(count) || 10));

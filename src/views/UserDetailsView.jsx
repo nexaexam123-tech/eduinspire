@@ -46,10 +46,11 @@ export default function UserDetailsView() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch('/api/credentials/upload-participants', { method: 'POST', body: formData });
+      const endpoint = activeTab === 'AUDIENCE' ? '/api/credentials/upload-audience' : '/api/credentials/upload-participants';
+      const res = await fetch(endpoint, { method: 'POST', body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setUploadMessage({ type: 'success', text: `Successfully imported ${data.imported} participants. Skipped ${data.skipped} duplicates.` });
+      setUploadMessage({ type: 'success', text: `Successfully imported ${data.imported} ${activeTab.toLowerCase()}s. Skipped ${data.skipped} duplicates.` });
       fetchUsers();
     } catch (err) {
       setUploadMessage({ type: 'error', text: err.message });
@@ -198,14 +199,22 @@ export default function UserDetailsView() {
           <p className="text-sm text-slate-400 font-medium">
             Showing <span className="text-white">{filteredUsers.length}</span> {activeTab.toLowerCase()} accounts
           </p>
-          {activeTab === 'PARTICIPANT' && (
-            <div className="flex items-center gap-3">
-              <input type="file" accept=".xlsx,.xls" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
-              <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="btn-secondary py-2 text-xs">
-                {uploading ? <span className="animate-pulse">Uploading...</span> : <><UploadCloud className="w-4 h-4" /> Bulk Upload Credentials</>}
-              </button>
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => window.location.href = '/api/users/export'} 
+              className="btn-secondary py-2 text-xs flex items-center gap-1"
+            >
+              <Users className="w-4 h-4" /> Export Users
+            </button>
+            {(activeTab === 'PARTICIPANT' || activeTab === 'AUDIENCE') && (
+              <>
+                <input type="file" accept=".xlsx,.xls" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
+                <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="btn-secondary py-2 text-xs flex items-center gap-1">
+                  {uploading ? <span className="animate-pulse">Uploading...</span> : <><UploadCloud className="w-4 h-4" /> Upload {activeTab === 'AUDIENCE' ? 'Audience' : 'Participants'}</>}
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Table */}
