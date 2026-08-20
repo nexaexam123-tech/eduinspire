@@ -28,6 +28,54 @@ export default function TeamManagement() {
   };
 
 
+  const [selectedTeamIds, setSelectedTeamIds] = useState([]);
+  const [deletingBulk, setDeletingBulk] = useState(false);
+
+  const toggleSelectAll = (filteredList) => {
+    const allFilteredIds = filteredList.map(t => t.id);
+    const isAllSelected = allFilteredIds.length > 0 && allFilteredIds.every(id => selectedTeamIds.includes(id));
+
+    if (isAllSelected) {
+      setSelectedTeamIds(selectedTeamIds.filter(id => !allFilteredIds.includes(id)));
+    } else {
+      const combined = Array.from(new Set([...selectedTeamIds, ...allFilteredIds]));
+      setSelectedTeamIds(combined);
+    }
+  };
+
+  const toggleSelectOne = (id) => {
+    if (selectedTeamIds.includes(id)) {
+      setSelectedTeamIds(selectedTeamIds.filter(item => item !== id));
+    } else {
+      setSelectedTeamIds([...selectedTeamIds, id]);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedTeamIds.length === 0) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedTeamIds.length} selected team(s)? This will also remove their credentials and evaluation scores.`)) {
+      return;
+    }
+    setDeletingBulk(true);
+    setActionMessage(null);
+    try {
+      const res = await fetch('/api/teams/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teamIds: selectedTeamIds })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete teams.');
+      setActionMessage({ type: 'success', text: data.message });
+      setSelectedTeamIds([]);
+      fetchTeams();
+    } catch (err) {
+      setActionMessage({ type: 'error', text: err.message });
+    } finally {
+      setDeletingBulk(false);
+    }
+  };
+
   // Modals state
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -367,7 +415,7 @@ export default function TeamManagement() {
 
         {/* Teams List */}
         <div className="lg:col-span-2 bg-white border border-slate-300 shadow-sm rounded-2xl flex flex-col overflow-hidden">
-          <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-4">
+          <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="relative flex-1 max-w-md">
               <Search className="w-4 h-4 text-slate-600 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -378,8 +426,21 @@ export default function TeamManagement() {
                 className="w-full pl-9 pr-4 py-2 bg-white border-2 border-slate-300 rounded-xl text-sm font-bold text-slate-950 placeholder:text-slate-500 placeholder:font-normal focus:outline-none focus:border-indigo-600 shadow-sm"
               />
             </div>
-            <div className="text-xs font-bold text-slate-700 hidden sm:block">
-              Showing <span className="text-slate-950 font-extrabold">{filteredTeams.length}</span> of {teams.length} teams
+
+            <div className="flex items-center gap-3">
+              {selectedTeamIds.length > 0 && (
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={deletingBulk}
+                  className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold rounded-xl flex items-center gap-1.5 transition-all shadow-md animate-fade-up"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{deletingBulk ? 'Deleting...' : `Delete Selected (${selectedTeamIds.length})`}</span>
+                </button>
+              )}
+              <div className="text-xs font-bold text-slate-700 hidden sm:block">
+                Showing <span className="text-slate-950 font-extrabold">{filteredTeams.length}</span> of {teams.length} teams
+              </div>
             </div>
           </div>
           
@@ -387,6 +448,15 @@ export default function TeamManagement() {
             <table className="w-full text-left text-sm border-collapse">
               <thead className="bg-slate-100 text-slate-900 text-xs font-extrabold uppercase tracking-wider sticky top-0 z-10 border-b border-slate-300">
                 <tr>
+                  <th className="py-3.5 px-3 text-center w-10">
+                    <input
+                      type="checkbox"
+                      checked={filteredTeams.length > 0 && filteredTeams.every(t => selectedTeamIds.includes(t.id))}
+                      onChange={() => toggleSelectAll(filteredTeams)}
+                      className="w-4 h-4 rounded border-slate-400 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                      title="Select all filtered teams"
+                    />
+                  </th>
                   <th className="py-3.5 px-4">Order</th>
                   <th className="py-3.5 px-4">Team & Project Details</th>
                   <th className="py-3.5 px-4">Faculty Members</th>
@@ -395,12 +465,21 @@ export default function TeamManagement() {
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {filteredTeams.map((team) => (
-                  <tr key={team.id} className="hover:bg-slate-50/80 transition-colors">
+                  <tr key={team.id} className={`hover:bg-slate-50/80 transition-colors ${selectedTeamIds.includes(team.id) ? 'bg-indigo-50/60' : ''}`}>
+                    <td className="py-3.5 px-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedTeamIds.includes(team.id)}
+                        onChange={() => toggleSelectOne(team.id)}
+                        className="w-4 h-4 rounded border-slate-400 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                      />
+                    </td>
                     <td className="py-3.5 px-4 font-mono font-extrabold text-slate-950">
                       <span className="inline-block px-2.5 py-1 bg-indigo-100 border border-indigo-300 text-indigo-950 rounded-lg text-xs font-bold">
                         #{team.presentation_order}
                       </span>
                     </td>
+
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                         <span className="px-2 py-0.5 bg-slate-200 border border-slate-400 text-slate-950 font-mono font-bold text-xs rounded">

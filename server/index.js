@@ -809,11 +809,48 @@ app.put('/api/teams/:id', async (req, res) => {
 app.delete('/api/teams/:id', async (req, res) => {
   try {
     const teamId = req.params.id;
+    await db.query('DELETE FROM users WHERE team_id = ?', [teamId]);
+    await db.query('DELETE FROM judge_scores WHERE team_id = ?', [teamId]);
+    await db.query('DELETE FROM audience_evaluations WHERE team_id = ?', [teamId]);
+    await db.query('DELETE FROM manual_rankings WHERE team_id = ?', [teamId]);
+    await db.query('DELETE FROM manual_scores WHERE team_id = ?', [teamId]);
     await db.query('DELETE FROM teams WHERE id = ?', [teamId]);
     res.json({ success: true, message: 'Team deleted successfully.' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/teams/bulk-delete', async (req, res) => {
+  try {
+    const { teamIds } = req.body;
+    if (!Array.isArray(teamIds) || teamIds.length === 0) {
+      return res.status(400).json({ error: 'No team IDs provided.' });
+    }
+
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+      for (const id of teamIds) {
+        await conn.query('DELETE FROM users WHERE team_id = ?', [id]);
+        await conn.query('DELETE FROM judge_scores WHERE team_id = ?', [id]);
+        await conn.query('DELETE FROM audience_evaluations WHERE team_id = ?', [id]);
+        await conn.query('DELETE FROM manual_rankings WHERE team_id = ?', [id]);
+        await conn.query('DELETE FROM manual_scores WHERE team_id = ?', [id]);
+        await conn.query('DELETE FROM teams WHERE id = ?', [id]);
+      }
+      await conn.commit();
+      res.json({ success: true, message: `Successfully deleted ${teamIds.length} team(s).` });
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete teams: ' + err.message });
   }
 });
 
@@ -1312,6 +1349,40 @@ app.delete('/api/users/:userId', async (req, res) => {
     res.status(500).json({ error: 'Failed to delete user: ' + err.message });
   } finally {
     conn.release();
+  }
+});
+
+app.post('/api/users/bulk-delete', async (req, res) => {
+  try {
+    const { userIds } = req.body;
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ error: 'No user IDs provided.' });
+    }
+
+    const conn = await db.getConnection();
+    try {
+      await conn.beginTransaction();
+      for (const userId of userIds) {
+        const [userRows] = await conn.query('SELECT * FROM users WHERE user_id = ?', [userId]);
+        const user = userRows[0];
+        if (!user) continue;
+
+        if (user.role === 'AUDIENCE') {
+          await conn.query('DELETE FROM audience_evaluations WHERE voter_id = ?', [user.user_id]);
+        }
+        await conn.query('DELETE FROM users WHERE user_id = ?', [userId]);
+      }
+      await conn.commit();
+      res.json({ success: true, message: `Successfully deleted ${userIds.length} user(s).` });
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete users: ' + err.message });
   }
 });
 

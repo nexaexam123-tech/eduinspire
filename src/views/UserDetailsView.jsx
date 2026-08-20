@@ -29,6 +29,55 @@ export default function UserDetailsView() {
   const [sendingAll, setSendingAll] = useState(false);
   const [sendingSingleId, setSendingSingleId] = useState(null);
 
+  // Bulk Delete User state
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [deletingBulkUsers, setDeletingBulkUsers] = useState(false);
+
+  const toggleSelectAllUsers = (filteredList) => {
+    const allFilteredIds = filteredList.map(u => u.user_id);
+    const isAllSelected = allFilteredIds.length > 0 && allFilteredIds.every(id => selectedUserIds.includes(id));
+
+    if (isAllSelected) {
+      setSelectedUserIds(selectedUserIds.filter(id => !allFilteredIds.includes(id)));
+    } else {
+      const combined = Array.from(new Set([...selectedUserIds, ...allFilteredIds]));
+      setSelectedUserIds(combined);
+    }
+  };
+
+  const toggleSelectOneUser = (userId) => {
+    if (selectedUserIds.includes(userId)) {
+      setSelectedUserIds(selectedUserIds.filter(id => id !== userId));
+    } else {
+      setSelectedUserIds([...selectedUserIds, userId]);
+    }
+  };
+
+  const handleBulkDeleteUsers = async () => {
+    if (selectedUserIds.length === 0) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedUserIds.length} selected user(s)?`)) return;
+
+    setDeletingBulkUsers(true);
+    setUploadMessage(null);
+    try {
+      const res = await fetch('/api/users/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userIds: selectedUserIds })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete users.');
+      setUploadMessage({ type: 'success', text: data.message });
+      setSelectedUserIds([]);
+      fetchUsers();
+    } catch (err) {
+      setUploadMessage({ type: 'error', text: err.message });
+    } finally {
+      setDeletingBulkUsers(false);
+    }
+  };
+
+
   const handleSendAllCredentials = async () => {
     if (!window.confirm('Are you sure you want to send User ID and Password emails to ALL participants?')) {
       return;
@@ -296,11 +345,24 @@ export default function UserDetailsView() {
         </div>
 
         {/* Toolbar */}
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white">
-          <p className="text-sm text-slate-600 font-semibold">
-            Showing <span className="text-slate-950 font-extrabold">{filteredUsers.length}</span> {activeTab.toLowerCase()} accounts
-          </p>
+        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white">
           <div className="flex items-center gap-3">
+            <p className="text-sm text-slate-600 font-semibold">
+              Showing <span className="text-slate-950 font-extrabold">{filteredUsers.length}</span> {activeTab.toLowerCase()} accounts
+            </p>
+            {selectedUserIds.length > 0 && (
+              <button
+                onClick={handleBulkDeleteUsers}
+                disabled={deletingBulkUsers}
+                className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold rounded-xl flex items-center gap-1.5 transition-all shadow-sm animate-fade-up"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{deletingBulkUsers ? 'Deleting...' : `Delete Selected (${selectedUserIds.length})`}</span>
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap">
             <button 
               onClick={() => window.location.href = '/api/users/export'} 
               className="btn-secondary py-2 text-xs flex items-center gap-1 text-slate-800 border-slate-300"
@@ -320,7 +382,7 @@ export default function UserDetailsView() {
             )}
             {(activeTab === 'PARTICIPANT' || activeTab === 'AUDIENCE') && (
               <>
-                <input type="file" accept=".xlsx,.xls" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
+                <input type="file" accept=".xls,.xlsx" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
                 <button
                   onClick={downloadSampleXLSX}
                   className="py-2 text-xs flex items-center gap-1.5 px-3 bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-200 hover:border-indigo-400 text-indigo-900 font-bold rounded-xl transition-all"
@@ -343,6 +405,15 @@ export default function UserDetailsView() {
           <table className="w-full text-left text-sm border-collapse">
             <thead className="bg-slate-100 text-slate-800 text-xs uppercase tracking-wider sticky top-0 z-10 border-b border-slate-300">
               <tr>
+                <th className="py-2.5 px-3 text-center w-10">
+                  <input
+                    type="checkbox"
+                    checked={filteredUsers.length > 0 && filteredUsers.every(u => selectedUserIds.includes(u.user_id))}
+                    onChange={() => toggleSelectAllUsers(filteredUsers)}
+                    className="w-4 h-4 rounded border-slate-400 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                    title="Select all filtered users"
+                  />
+                </th>
                 <th className="py-2.5 px-3 font-extrabold">Email / Contact</th>
                 <th className="py-2.5 px-3 font-extrabold">{activeTab === 'AUDIENCE' ? 'Voter ID' : 'User ID'}</th>
                 {(activeTab === 'PARTICIPANT' || activeTab === 'JUDGE') && <th className="py-2.5 px-3 font-extrabold">Password</th>}
@@ -353,7 +424,7 @@ export default function UserDetailsView() {
             <tbody className="divide-y divide-slate-100">
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={(activeTab === 'PARTICIPANT' || activeTab === 'JUDGE') ? 5 : 4} className="py-6 text-center">
+                  <td colSpan={(activeTab === 'PARTICIPANT' || activeTab === 'JUDGE') ? 6 : 5} className="py-6 text-center">
                     <div className="flex flex-col items-center justify-center space-y-2 text-slate-500">
                       <Users className="w-8 h-8 opacity-20" />
                       <p className="text-sm">No users found in this category.</p>
@@ -362,9 +433,18 @@ export default function UserDetailsView() {
                 </tr>
               ) : (
                 filteredUsers.map(user => (
-                  <tr key={user.id} className="hover:bg-indigo-50/40 transition-colors group">
+                  <tr key={user.id} className={`hover:bg-indigo-50/40 transition-colors group ${selectedUserIds.includes(user.user_id) ? 'bg-indigo-50/80' : ''}`}>
+                    <td className="py-2 px-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedUserIds.includes(user.user_id)}
+                        onChange={() => toggleSelectOneUser(user.user_id)}
+                        className="w-4 h-4 rounded border-slate-400 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                      />
+                    </td>
                     {/* Email column with inline edit */}
                     <td className="py-2 px-3 text-slate-800">
+
                       {editingEmailUserId === user.user_id ? (
                         <div className="flex items-center gap-2">
                           <Mail className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
