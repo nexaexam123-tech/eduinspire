@@ -32,6 +32,154 @@ function generateAccessCode() {
 }
 
 // ----------------------------------------------------
+// EMAIL SERVICE HELPERS
+// ----------------------------------------------------
+async function sendEmail({ to, subject, html, text }) {
+  const cleanEmail = to ? to.trim().toLowerCase() : '';
+  if (!cleanEmail) return false;
+
+  const smtpPort = parseInt(process.env.SMTP_PORT, 10) || 587;
+  const smtpSecure = smtpPort === 465;
+  const senderEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'noreply@eduinspire.org';
+
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: smtpPort,
+    secure: smtpSecure,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
+
+  const mailOptions = {
+    from: `"EduInspire Event Portal" <${senderEmail}>`,
+    to: cleanEmail,
+    subject: subject,
+    text: text,
+    html: html
+  };
+
+  if (process.env.BREVO_API_KEY) {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': process.env.BREVO_API_KEY,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        sender: { 
+          email: senderEmail, 
+          name: 'EduInspire Event Portal' 
+        },
+        to: [{ email: cleanEmail }],
+        subject: subject,
+        htmlContent: html
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Brevo API Error');
+    }
+    console.log(`[BREVO EMAIL SERVICE] -> Sent to: ${cleanEmail} | Subject: ${subject}`);
+    return true;
+  } else if (process.env.SMTP_USER && process.env.SMTP_PASS && process.env.SMTP_USER !== 'your-email@gmail.com') {
+    await transporter.sendMail(mailOptions);
+    console.log(`[SMTP EMAIL SERVICE] -> Sent to: ${cleanEmail} via port ${smtpPort} | Subject: ${subject}`);
+    return true;
+  } else {
+    console.log(`\n====================================================`);
+    console.log(` [MOCK EMAIL SERVICE] -> Sent to: ${cleanEmail}`);
+    console.log(` [SUBJECT]: ${subject}`);
+    console.log(` [TEXT BODY]:\n${text}`);
+    console.log(`====================================================\n`);
+    return true;
+  }
+}
+
+async function sendParticipantLoginNotification(user, loginInputId) {
+  const targetEmail = user.email || (loginInputId && loginInputId.includes('@') ? loginInputId : null);
+  if (!targetEmail) {
+    console.log(`[LOGIN NOTIFICATION SKIPPED] No registered email address found for participant: ${user.user_id}`);
+    return;
+  }
+
+  const now = new Date();
+  const formattedDateTime = now.toLocaleString('en-US', {
+    dateStyle: 'full',
+    timeStyle: 'medium',
+    timeZone: process.env.TIMEZONE || 'Asia/Kolkata'
+  }) + ' (IST)';
+
+  const subject = '🔐 Login Confirmation - EduInspire Event Portal';
+
+  const textBody = `Hello Participant,\n\nYou have successfully logged into the EduInspire Event Portal.\n\nLogin Details:\n- Participant User ID: ${user.user_id}\n- Date & Time: ${formattedDateTime}\n\nSecurity Notice:\nIf you did NOT perform this login, please contact the Event Administrator immediately to secure your account.\n\nThank you,\nEduInspire Event Management Team`;
+
+  const htmlBody = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+      <div style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); padding: 24px; text-align: center; color: #ffffff;">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 0.5px;">EduInspire Event Portal</h2>
+        <p style="margin: 6px 0 0 0; font-size: 14px; opacity: 0.9; font-weight: 500;">Successful Participant Login Notice</p>
+      </div>
+      <div style="padding: 28px; color: #1e293b; line-height: 1.6;">
+        <p style="font-size: 16px; font-weight: 700; margin-top: 0; color: #0f172a;">Dear Participant,</p>
+        <p style="font-size: 14px; color: #334155;">
+          This is an automated security notification confirming that your participant account was successfully authenticated and logged into the <strong>EduInspire Event Portal</strong>.
+        </p>
+        
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #4f46e5; padding: 16px 20px; margin: 24px 0; border-radius: 6px;">
+          <h4 style="margin: 0 0 12px 0; color: #334155; font-size: 13px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700;">Account Activity Summary</h4>
+          <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 4px 0; color: #64748b; font-weight: 600; width: 140px;">Participant ID:</td>
+              <td style="padding: 4px 0; font-family: monospace; font-size: 15px; font-weight: 700; color: #4f46e5;">${user.user_id}</td>
+            </tr>
+            <tr>
+              <td style="padding: 4px 0; color: #64748b; font-weight: 600;">Date & Time:</td>
+              <td style="padding: 4px 0; color: #0f172a; font-weight: 600;">${formattedDateTime}</td>
+            </tr>
+            <tr>
+              <td style="padding: 4px 0; color: #64748b; font-weight: 600;">Login Status:</td>
+              <td style="padding: 4px 0; color: #16a34a; font-weight: 700;">✅ Login Successful</td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="background-color: #fff1f2; border: 1px solid #fecdd3; padding: 16px 20px; border-radius: 8px; margin-top: 24px;">
+          <p style="margin: 0; color: #9f1239; font-size: 14px; font-weight: 700;">⚠️ Security Notice:</p>
+          <p style="margin: 6px 0 0 0; color: #9f1239; font-size: 13px; line-height: 1.5;">
+            If this login was <strong>NOT</strong> performed by you, please contact the Event Administrator immediately to report unauthorized access and secure your account credentials.
+          </p>
+        </div>
+
+        <p style="margin-top: 24px; font-size: 12px; color: #64748b; line-height: 1.5;">
+          <em>Note: Your account password is securely encrypted and stored. Passwords are never sent or transmitted in cleartext email notifications.</em>
+        </p>
+      </div>
+      <div style="background-color: #f1f5f9; padding: 16px; text-align: center; color: #64748b; font-size: 12px; border-top: 1px solid #e2e8f0;">
+        &copy; ${new Date().getFullYear()} EduInspire Event Portal. All rights reserved.
+      </div>
+    </div>
+  `;
+
+  try {
+    await sendEmail({
+      to: targetEmail,
+      subject: subject,
+      text: textBody,
+      html: htmlBody
+    });
+  } catch (err) {
+    console.error(`[PARTICIPANT LOGIN NOTIFICATION ERROR] Failed to send email to ${targetEmail}:`, err);
+  }
+}
+
+// ----------------------------------------------------
 // 1. AUTHENTICATION ROUTE
 // ----------------------------------------------------
 app.post('/api/auth/login', async (req, res) => {
@@ -93,6 +241,13 @@ app.post('/api/auth/login', async (req, res) => {
 
     if (user.role === 'AUDIENCE') {
       return res.status(403).json({ error: 'Audience voters must use OTP login with their email.' });
+    }
+
+    // Automatically send confirmation email upon successful Participant login
+    if (user.role === 'PARTICIPANT') {
+      sendParticipantLoginNotification(user, cleanId).catch(err => {
+        console.error('[LOGIN EMAIL ERROR]', err);
+      });
     }
 
     return res.json({
