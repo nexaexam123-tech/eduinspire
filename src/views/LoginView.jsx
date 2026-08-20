@@ -21,11 +21,7 @@ export default function LoginView({ onLoginSuccess }) {
     setViewState(state);
     setError(null);
     setOtpSent(false);
-    
-    if (state === 'ADMIN_LOGIN') {
-      setUserId('admin');
-      setPassword('admin123');
-    } else {
+    if (state === 'ADMIN_LOGIN' || state === 'JUDGE_LOGIN' || state === 'PARTICIPANT_LOGIN') {
       setUserId('');
       setPassword('');
     }
@@ -247,8 +243,20 @@ export default function LoginView({ onLoginSuccess }) {
                 
                 {viewState === 'ADMIN_LOGIN' && (
                   <div className="text-center pt-4 border-t border-[#C9C9C9] mt-6">
-                    <p className="text-[13px] font-bold text-[#55585C]">
-                      Default Admin Credentials Auto-Filled
+                    <p className="text-[13px] font-medium text-[#55585C]">
+                      Default Admin ID: <strong className="text-[#111315]">admin</strong>
+                      <br />
+                      Password: <strong className="text-[#111315]">admin123</strong>
+                    </p>
+                  </div>
+                )}
+                
+                {viewState === 'JUDGE_LOGIN' && (
+                  <div className="text-center pt-4 border-t border-[#C9C9C9] mt-6">
+                    <p className="text-[13px] font-medium text-[#55585C]">
+                      Default Judge ID: <strong className="text-[#111315]">JUDGEPORTAL</strong>
+                      <br />
+                      Password: <strong className="text-[#111315]">JKEY2026</strong>
                     </p>
                   </div>
                 )}
