@@ -167,9 +167,9 @@ export default function UserDetailsView() {
         </div>
       )}
 
-      <div className="surface-card overflow-hidden flex flex-col min-h-[50vh]">
+      <div className="overflow-hidden flex flex-col min-h-[50vh]">
         {/* Tabs */}
-        <div className="border-b border-slate-800/60 bg-[#172033]/50 px-4 pt-4 flex gap-4 overflow-x-auto">
+        <div className="border-b border-slate-700/40 px-4 pt-4 flex gap-4 overflow-x-auto">
           {[
             { id: 'JUDGE', label: 'Judges', icon: Gavel },
             { id: 'PARTICIPANT', label: 'Participants', icon: UserCheck },
@@ -195,7 +195,7 @@ export default function UserDetailsView() {
         </div>
 
         {/* Toolbar */}
-        <div className="p-4 border-b border-slate-800/60 flex items-center justify-between bg-slate-900/20">
+        <div className="p-4 border-b border-slate-700/40 flex items-center justify-between">
           <p className="text-sm text-slate-400 font-medium">
             Showing <span className="text-white">{filteredUsers.length}</span> {activeTab.toLowerCase()} accounts
           </p>
