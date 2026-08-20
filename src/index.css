@@ -12,24 +12,26 @@
 @layer base {
   body {
     @apply antialiased min-h-screen selection:bg-indigo-500 selection:text-white;
-    background-color: #111315;
-    color: #F5F5F5;
+    background-color: var(--color-charcoal-main, #111315);
+    color: var(--color-platinum, #E5E4E2);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
 
 /* Base surface elements */
 .surface-card, .glass-card {
-  background-color: #17191C;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background-color: var(--color-platinum, #E5E4E2);
+  border: 1px solid var(--color-silver, #C9C9C9);
   border-radius: 16px;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.1);
+  color: var(--color-charcoal-main, #111315);
 }
 
 .surface-panel, .glass-panel {
-  background-color: #17191C;
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  background-color: #ffffff;
+  border: 1px solid var(--color-silver, #C9C9C9);
   border-radius: 14px;
+  color: var(--color-charcoal-main, #111315);
 }
 
 /* Button Tokens */
@@ -56,13 +58,13 @@
 }
 
 .btn-secondary {
-  @apply bg-slate-800 border border-slate-700 text-slate-200 font-medium px-4 py-2 flex items-center justify-center gap-2;
+  @apply bg-[#F1F0EE] border border-[#C9C9C9] text-[#55585C] font-bold px-4 py-2 flex items-center justify-center gap-2;
   border-radius: 10px;
   transition: all 0.2s ease-out;
 }
 
 .btn-secondary:hover {
-  @apply bg-slate-700 text-white border-slate-600;
+  @apply bg-white text-[#111315] border-indigo-400;
   transform: translateY(-1px);
 }
 
@@ -71,44 +73,43 @@
 }
 
 .btn-danger {
-  @apply bg-rose-600/10 border border-rose-500/30 text-rose-500 font-medium px-4 py-2 flex items-center justify-center gap-2;
+  @apply bg-rose-50 border border-rose-200 text-rose-600 font-bold px-4 py-2 flex items-center justify-center gap-2;
   border-radius: 10px;
   transition: all 0.2s ease-out;
 }
 
 .btn-danger:hover {
-  @apply bg-rose-500 text-white border-rose-500;
-  box-shadow: 0 4px 14px rgba(244, 63, 94, 0.25);
+  @apply bg-rose-100 text-rose-700 border-rose-300;
+  box-shadow: 0 4px 14px rgba(244, 63, 94, 0.15);
   transform: translateY(-1px);
 }
 
 .btn-success {
-  @apply bg-emerald-600/10 border border-emerald-500/30 text-emerald-500 font-medium px-4 py-2 flex items-center justify-center gap-2;
+  @apply bg-emerald-50 border border-emerald-200 text-emerald-600 font-bold px-4 py-2 flex items-center justify-center gap-2;
   border-radius: 10px;
   transition: all 0.2s ease-out;
 }
 
 .btn-success:hover {
-  @apply bg-emerald-500 text-white border-emerald-500;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+  @apply bg-emerald-100 text-emerald-700 border-emerald-300;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.15);
   transform: translateY(-1px);
 }
 
 /* Forms */
 .form-input {
-  @apply w-full bg-[#172033] border border-slate-800 text-slate-100 px-4;
+  @apply w-full bg-white border border-[#C9C9C9] text-[#111315] px-4 font-semibold;
   border-radius: 10px;
   height: 44px;
   transition: all 0.2s ease;
 }
 
 .form-input:focus {
-  @apply border-indigo-500 outline-none;
-  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2);
+  @apply border-indigo-500 outline-none ring-2 ring-indigo-500/20;
 }
 
 .form-input:disabled {
-  @apply bg-slate-900/50 text-slate-500 cursor-not-allowed border-slate-800/50;
+  @apply bg-[#F1F0EE] text-[#55585C] cursor-not-allowed border-[#C9C9C9];
 }
 
 /* Animations */
