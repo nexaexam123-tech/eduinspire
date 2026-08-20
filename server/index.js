@@ -439,13 +439,15 @@ app.post('/api/event/voting/global-update', (req, res) => {
     const nowMs = Date.now();
     const sec = durationSeconds && durationSeconds > 0 ? durationSeconds : 0;
     if (sec > 0) {
+      const currentState = db.prepare('SELECT voting_timer_running FROM event_state WHERE id = 1').get();
+      const isRunning = currentState?.voting_timer_running === 1;
       db.prepare(`
         UPDATE event_state 
         SET voting_timer_seconds = ?,
             voting_timer_remaining = ?,
             voting_timer_started_at = ?
         WHERE id = 1
-      `).run(sec, sec, nowMs);
+      `).run(sec, sec, isRunning ? nowMs : null);
     }
   } else if (action === 'STOP') {
     const nowIso = new Date().toISOString();
@@ -699,11 +701,28 @@ app.post('/api/judge/scores', (req, res) => {
 // ----------------------------------------------------
 app.get('/api/evaluation/my-status', (req, res) => {
   const { voterId } = req.query;
-  if (!voterId) return res.json({ evaluatedTeamIds: [] });
+  if (!voterId) return res.json({ evaluatedTeamIds: [], scores: {}, categoryScores: {} });
 
-  const rows = db.prepare('SELECT team_id FROM audience_evaluations WHERE UPPER(voter_id) = UPPER(?)').all(voterId);
+  const rows = db.prepare('SELECT * FROM audience_evaluations WHERE UPPER(voter_id) = UPPER(?)').all(voterId);
   const teamIds = rows.map(r => r.team_id);
-  res.json({ evaluatedTeamIds: teamIds });
+  const scores = {};
+  const categoryScores = {};
+  
+  rows.forEach(r => {
+    scores[r.team_id] = r.total_score;
+    categoryScores[r.team_id] = {
+      studentImpact: r.student_impact,
+      facultyImpact: r.faculty_impact,
+      adminImpact: r.admin_impact,
+      socialImpact: r.social_impact,
+      innovation: r.innovation,
+      implementation: r.implementation,
+      outcomes: r.outcomes,
+      replicability: r.replicability
+    };
+  });
+
+  res.json({ evaluatedTeamIds: teamIds, scores, categoryScores });
 });
 
 app.post('/api/evaluation/submit', (req, res) => {
@@ -711,11 +730,11 @@ app.post('/api/evaluation/submit', (req, res) => {
     voterId,
     voterRole,
     voterTeamId,
-    votes // Array of { teamId, totalScore }
+    votes // Array of { teamId, totalScore, ... }
   } = req.body;
 
-  if (!votes || !Array.isArray(votes)) {
-    return res.status(400).json({ error: 'Votes array is required.' });
+  if (!votes || !Array.isArray(votes) || votes.length === 0) {
+    return res.status(400).json({ error: 'Votes array is required and must contain at least 1 evaluation.' });
   }
 
   // 1. Check if evaluation is currently OPEN
@@ -724,15 +743,7 @@ app.post('/api/evaluation/submit', (req, res) => {
     return res.status(403).json({ error: 'Evaluation is currently CLOSED by Admin. You can only evaluate during the voting period.' });
   }
 
-  // 2. Validate vote counts (40 for Audience, 39 for Participant)
-  const allTeams = db.prepare('SELECT id FROM teams').all();
-  const totalTeamsCount = allTeams.length;
-  
-  const requiredVotes = voterRole === 'PARTICIPANT' ? totalTeamsCount - 1 : totalTeamsCount;
-  const isComplete = votes.length === requiredVotes;
-  const voteStatus = isComplete ? 'VALID' : 'INVALID';
-
-  // 3. Backend restriction: Participant cannot evaluate their own team!
+  // 2. Participant restriction: cannot evaluate own team
   if (voterRole === 'PARTICIPANT' && voterTeamId) {
     const votedForOwn = votes.some(v => parseInt(v.teamId) === parseInt(voterTeamId));
     if (votedForOwn) {
@@ -740,37 +751,53 @@ app.post('/api/evaluation/submit', (req, res) => {
     }
   }
 
-  // 4. Backend check: Duplicate evaluation prevention
-  const existingCount = db.prepare('SELECT COUNT(*) as count FROM audience_evaluations WHERE UPPER(voter_id) = UPPER(?)').get(voterId).count;
-  if (existingCount > 0) {
-    return res.status(409).json({ error: 'LOCKED: You have already submitted your evaluations. Editing/Resubmission is prohibited.' });
-  }
-
-  // 5. Insert all votes in a transaction with status
-  const insertStmt = db.prepare(`
+  // 3. Upsert votes in a transaction
+  const upsertStmt = db.prepare(`
     INSERT INTO audience_evaluations (
       voter_id, voter_role, voter_team_id, team_id, student_impact, faculty_impact,
       admin_impact, social_impact, innovation, implementation, outcomes, replicability, total_score, status
-    ) VALUES (?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'VALID')
+    ON CONFLICT(voter_id, team_id) DO UPDATE SET
+      student_impact = excluded.student_impact,
+      faculty_impact = excluded.faculty_impact,
+      admin_impact = excluded.admin_impact,
+      social_impact = excluded.social_impact,
+      innovation = excluded.innovation,
+      implementation = excluded.implementation,
+      outcomes = excluded.outcomes,
+      replicability = excluded.replicability,
+      total_score = excluded.total_score,
+      status = 'VALID',
+      submitted_at = CURRENT_TIMESTAMP
   `);
 
   const transaction = db.transaction((votesList) => {
     for (const v of votesList) {
       const ts = Math.min(100, Math.max(0, parseInt(v.totalScore) || 0));
-      insertStmt.run(voterId, voterRole, voterTeamId || null, v.teamId, ts, voteStatus);
+      upsertStmt.run(
+        voterId,
+        voterRole || 'AUDIENCE',
+        voterTeamId || null,
+        v.teamId,
+        Math.min(20, Math.max(0, parseInt(v.studentImpact) || 0)),
+        Math.min(10, Math.max(0, parseInt(v.facultyImpact) || 0)),
+        Math.min(10, Math.max(0, parseInt(v.adminImpact) || 0)),
+        Math.min(10, Math.max(0, parseInt(v.socialImpact) || 0)),
+        Math.min(20, Math.max(0, parseInt(v.innovation) || 0)),
+        Math.min(15, Math.max(0, parseInt(v.implementation) || 0)),
+        Math.min(10, Math.max(0, parseInt(v.outcomes) || 0)),
+        Math.min(5, Math.max(0, parseInt(v.replicability) || 0)),
+        ts
+      );
     }
   });
 
   try {
     transaction(votes);
-    if (!isComplete) {
-      res.json({ success: true, message: 'Evaluations locked. However, because you did not vote for all required teams, your entire submission is marked INVALID and will not be counted.', status: 'INVALID' });
-    } else {
-      res.json({ success: true, message: 'All evaluations submitted and locked successfully!', status: 'VALID' });
-    }
+    res.json({ success: true, message: `Successfully recorded evaluations for ${votes.length} team(s)!`, count: votes.length, status: 'VALID' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Database error saving bulk votes.' });
+    res.status(500).json({ error: 'Database error saving evaluations.' });
   }
 });
 

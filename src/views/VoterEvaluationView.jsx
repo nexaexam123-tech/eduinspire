@@ -1,15 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, CheckCircle2, AlertTriangle, Send, LogOut, Check } from 'lucide-react';
+import { 
+  Lock, 
+  CheckCircle2, 
+  AlertTriangle, 
+  AlertCircle, 
+  Send, 
+  LogOut, 
+  Check, 
+  Eye, 
+  ChevronLeft, 
+  ChevronRight, 
+  ListChecks, 
+  Radio, 
+  Edit3, 
+  X,
+  Sparkles,
+  Save
+} from 'lucide-react';
 import SliderScore, { getCriteriaList } from '../components/SliderScore';
 
 export default function VoterEvaluationView({ user, onLogout }) {
   const [eventData, setEventData] = useState(null);
   const [teams, setTeams] = useState([]);
-  const [hasVoted, setHasVoted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [successToast, setSuccessToast] = useState(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [activeTeamId, setActiveTeamId] = useState(null);
+  const [submittedTeamIds, setSubmittedTeamIds] = useState([]);
   
   // State for all team scores: { [teamId]: number }
   const [scores, setScores] = useState(() => {
@@ -44,8 +63,16 @@ export default function VoterEvaluationView({ user, onLogout }) {
       setEventData(stateJson);
       setTeams(teamsJson);
       
-      if (statusJson.evaluatedTeamIds && statusJson.evaluatedTeamIds.length > 0) {
-        setHasVoted(true);
+      if (statusJson.evaluatedTeamIds) {
+        setSubmittedTeamIds(statusJson.evaluatedTeamIds);
+      }
+
+      // Merge server-saved scores if any
+      if (statusJson.scores && Object.keys(statusJson.scores).length > 0) {
+        setScores(prev => ({ ...statusJson.scores, ...prev }));
+      }
+      if (statusJson.categoryScores && Object.keys(statusJson.categoryScores).length > 0) {
+        setCategoryScores(prev => ({ ...statusJson.categoryScores, ...prev }));
       }
     } catch (err) {
       console.error(err);
@@ -60,11 +87,29 @@ export default function VoterEvaluationView({ user, onLogout }) {
     return () => clearInterval(interval);
   }, [user.userId]);
 
+  const isOwnTeam = (teamId) => {
+    return user.role === 'PARTICIPANT' && parseInt(user.teamId) === parseInt(teamId);
+  };
+
+  const eligibleTeams = teams.filter(t => !isOwnTeam(t.id));
+  const currentLiveTeamId = eventData?.state?.current_team_id;
+
+  // Set default active team if not already chosen
+  useEffect(() => {
+    if (!activeTeamId && eligibleTeams.length > 0) {
+      if (currentLiveTeamId && eligibleTeams.some(t => t.id === currentLiveTeamId)) {
+        setActiveTeamId(currentLiveTeamId);
+      } else {
+        setActiveTeamId(eligibleTeams[0].id);
+      }
+    }
+  }, [eligibleTeams, currentLiveTeamId, activeTeamId]);
+
   const handleCategoryChange = (teamId, catId, max, value) => {
     let val = value;
     if (val !== '') {
       val = parseInt(value, 10);
-      if (isNaN(val)) val = '';
+      if (isNaN(val)) val = 0;
       else if (val < 0) val = 0;
       else if (val > max) val = max;
     }
@@ -82,26 +127,75 @@ export default function VoterEvaluationView({ user, onLogout }) {
     });
   };
 
-  const isOwnTeam = (teamId) => {
-    return user.role === 'PARTICIPANT' && parseInt(user.teamId) === parseInt(teamId);
-  };
-
   const requiredCount = user.role === 'PARTICIPANT' && user.teamId ? Math.max(0, teams.length - 1) : teams.length;
-  
-  // Count only votes that are valid numbers, ignoring own team just in case
-  const votedCount = teams.filter(t => !isOwnTeam(t.id) && scores[t.id] !== undefined && scores[t.id] !== '').length;
+  const votedCount = eligibleTeams.filter(t => scores[t.id] !== undefined && scores[t.id] !== '').length;
   const isComplete = requiredCount > 0 && votedCount === requiredCount;
   const progressPercent = requiredCount > 0 ? (votedCount / requiredCount) * 100 : 0;
 
-  const handleSubmit = async () => {
+  const currentTeamIndex = eligibleTeams.findIndex(t => t.id === activeTeamId);
+  const currentActiveTeam = eligibleTeams[currentTeamIndex] || eligibleTeams[0];
+
+  const handlePrevTeam = () => {
+    if (currentTeamIndex > 0) {
+      setActiveTeamId(eligibleTeams[currentTeamIndex - 1].id);
+    }
+  };
+
+  const handleNextTeam = () => {
+    if (currentTeamIndex < eligibleTeams.length - 1) {
+      setActiveTeamId(eligibleTeams[currentTeamIndex + 1].id);
+    }
+  };
+
+  const handleBottomReviewAndSubmit = () => {
+    if (currentActiveTeam) {
+      const activeCats = categoryScores[currentActiveTeam.id] || {};
+      const activeTotal = getCriteriaList().reduce((sum, cat) => sum + (parseInt(activeCats[cat.key]) || 0), 0);
+      setScores(prev => {
+        const nextScores = { ...prev, [currentActiveTeam.id]: activeTotal };
+        return nextScores;
+      });
+    }
+    setError(null);
+    setShowPreviewModal(true);
+  };
+
+  // Submit all evaluated teams
+  const handleSubmitAll = async () => {
     setSubmitting(true);
     setError(null);
 
-    const eligibleTeams = teams.filter(t => !isOwnTeam(t.id));
-    const votesPayload = eligibleTeams.map(t => ({
-      teamId: t.id,
-      totalScore: parseInt(scores[t.id], 10) || 0
-    }));
+    // Make sure active team score is included
+    let allCurrentScores = { ...scores };
+    if (currentActiveTeam) {
+      const activeCats = categoryScores[currentActiveTeam.id] || {};
+      const activeTotal = getCriteriaList().reduce((sum, cat) => sum + (parseInt(activeCats[cat.key]) || 0), 0);
+      allCurrentScores[currentActiveTeam.id] = activeTotal;
+      setScores(allCurrentScores);
+    }
+
+    const scoredTeams = eligibleTeams.filter(t => allCurrentScores[t.id] !== undefined && allCurrentScores[t.id] !== '');
+    if (scoredTeams.length === 0) {
+      setError("Please evaluate at least one team before submitting.");
+      setSubmitting(false);
+      return;
+    }
+
+    const votesPayload = scoredTeams.map(t => {
+      const cats = categoryScores[t.id] || {};
+      return {
+        teamId: t.id,
+        totalScore: parseInt(allCurrentScores[t.id], 10) || 0,
+        studentImpact: parseInt(cats.studentImpact, 10) || 0,
+        facultyImpact: parseInt(cats.facultyImpact, 10) || 0,
+        adminImpact: parseInt(cats.adminImpact, 10) || 0,
+        socialImpact: parseInt(cats.socialImpact, 10) || 0,
+        innovation: parseInt(cats.innovation, 10) || 0,
+        implementation: parseInt(cats.implementation, 10) || 0,
+        outcomes: parseInt(cats.outcomes, 10) || 0,
+        replicability: parseInt(cats.replicability, 10) || 0
+      };
+    });
 
     try {
       const res = await fetch('/api/evaluation/submit', {
@@ -121,24 +215,75 @@ export default function VoterEvaluationView({ user, onLogout }) {
         throw new Error(data.error || 'Submission failed.');
       }
 
-      setHasVoted(true);
-      setShowConfirmModal(false);
+      setSubmittedTeamIds(prev => Array.from(new Set([...prev, ...scoredTeams.map(t => t.id)])));
+      setShowPreviewModal(false);
+      setSuccessToast(`Evaluations for ${scoredTeams.length} team(s) submitted successfully!`);
+      setTimeout(() => setSuccessToast(null), 4000);
       fetchData();
     } catch (err) {
       setError(err.message);
-      setShowConfirmModal(false);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const attemptSubmit = (e) => {
-    e.preventDefault();
-    if (!isComplete) {
-      setError(`Please evaluate all ${requiredCount} teams before submitting.`);
+  // Submit a single team immediately
+  const handleSingleTeamSubmit = async (teamId) => {
+    setSubmitting(true);
+    setError(null);
+
+    const teamScore = scores[teamId];
+    if (teamScore === undefined || teamScore === '') {
+      alert("Please adjust the score sliders for this team before submitting.");
+      setSubmitting(false);
       return;
     }
-    setShowConfirmModal(true);
+
+    const cats = categoryScores[teamId] || {};
+    const votesPayload = [{
+      teamId,
+      totalScore: parseInt(teamScore, 10) || 0,
+      studentImpact: parseInt(cats.studentImpact, 10) || 0,
+      facultyImpact: parseInt(cats.facultyImpact, 10) || 0,
+      adminImpact: parseInt(cats.adminImpact, 10) || 0,
+      socialImpact: parseInt(cats.socialImpact, 10) || 0,
+      innovation: parseInt(cats.innovation, 10) || 0,
+      implementation: parseInt(cats.implementation, 10) || 0,
+      outcomes: parseInt(cats.outcomes, 10) || 0,
+      replicability: parseInt(cats.replicability, 10) || 0
+    }];
+
+    try {
+      const res = await fetch('/api/evaluation/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          voterId: user.userId,
+          voterRole: user.role,
+          voterTeamId: user.teamId,
+          votes: votesPayload
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to submit score.');
+
+      setSubmittedTeamIds(prev => Array.from(new Set([...prev, teamId])));
+      const teamObj = eligibleTeams.find(t => t.id === teamId);
+      setSuccessToast(`Score for "${teamObj?.team_name || 'Team'}" submitted successfully! (${teamScore}/100)`);
+      setTimeout(() => setSuccessToast(null), 4000);
+      fetchData();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const openPreview = (e) => {
+    if (e) e.preventDefault();
+    setError(null);
+    setShowPreviewModal(true);
   };
 
   if (loading && !eventData) {
@@ -165,94 +310,182 @@ export default function VoterEvaluationView({ user, onLogout }) {
   };
 
   return (
-    <div className="max-w-3xl mx-auto pb-32">
-      {/* Mobile Header */}
-      <div className="surface-panel p-4 mb-4 flex items-center justify-between sticky top-4 z-40 shadow-lg">
+    <div className="max-w-4xl mx-auto pb-32">
+      {/* Toast Notification */}
+      {successToast && (
+        <div className="fixed top-5 right-5 z-50 p-4 bg-emerald-600 text-white rounded-xl shadow-2xl flex items-center gap-3 animate-fade-up">
+          <CheckCircle2 className="w-5 h-5 shrink-0" />
+          <span className="text-sm font-bold">{successToast}</span>
+        </div>
+      )}
+
+      {/* Top Header */}
+      <div className="surface-panel p-4 mb-4 flex items-center justify-between sticky top-4 z-40 shadow-lg border border-slate-800">
         <div>
-          <h2 className="text-lg font-bold text-white leading-tight">
-            {user.role === 'PARTICIPANT' ? 'Faculty Voting' : 'Audience Voting'}
+          <h2 className="text-lg font-bold text-white leading-tight flex items-center gap-2">
+            <span>{user.role === 'PARTICIPANT' ? 'Faculty Evaluation' : 'Audience Evaluation'}</span>
+            {isVotingOpen && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" /> Live
+              </span>
+            )}
           </h2>
           <div className="text-[11px] text-slate-400 mt-0.5">
             <span className="font-mono text-indigo-300 font-bold">{user.email || user.userId}</span>
             {user.collegeName && <span> &bull; {user.collegeName}</span>}
           </div>
         </div>
-        <button onClick={onLogout} className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-rose-400 transition-colors">
-          <LogOut className="w-5 h-5" />
-        </button>
+
+        <div className="flex items-center gap-2">
+          {isVotingOpen && (
+            <button
+              type="button"
+              onClick={openPreview}
+              className="btn-secondary px-3.5 py-1.5 text-xs flex items-center gap-1.5 text-indigo-300 hover:text-white"
+            >
+              <ListChecks className="w-4 h-4" />
+              <span>Preview ({votedCount}/{requiredCount})</span>
+            </button>
+          )}
+          <button 
+            onClick={onLogout} 
+            title="Log out" 
+            className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-rose-400 transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
-      {/* Case 1: Already Evaluated */}
-      {hasVoted && (
-        <div className="surface-card p-10 text-center space-y-5 animate-fade-up">
-          <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center mx-auto text-emerald-400">
-            <CheckCircle2 className="w-10 h-10" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-2xl font-extrabold text-white">Vote Submitted Successfully</h3>
-            <p className="text-sm text-slate-400 max-w-sm mx-auto leading-relaxed">
-              Your vote has been recorded and locked. Thank you for your participation.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Case 2: Voting is Closed */}
-      {!isVotingOpen && !hasVoted && (
+      {/* Case 1: Voting is Closed */}
+      {!isVotingOpen && (
         <div className="surface-card p-10 text-center space-y-5 animate-fade-up">
           <div className="w-20 h-20 bg-indigo-500/10 border border-indigo-500/30 rounded-full flex items-center justify-center mx-auto text-indigo-400">
             <Lock className="w-10 h-10" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-2xl font-bold text-white">Waiting for Voting</h3>
+            <h3 className="text-2xl font-bold text-white">Voting is Currently Closed</h3>
             <p className="text-sm text-slate-400 max-w-sm mx-auto leading-relaxed">
-              Voting will become available when the administrator starts the session.
+              Evaluation will become available once the administrator starts the voting session.
             </p>
           </div>
         </div>
       )}
 
-      {/* Case 3: Voting OPEN, Not Voted */}
-      {isVotingOpen && !hasVoted && (
-        <div className="space-y-4 animate-fade-up">
+      {/* Case 2: Voting OPEN */}
+      {isVotingOpen && (
+        <div className="space-y-5 animate-fade-up">
           
           {/* Status & Progress Card */}
           <div className="surface-card p-4">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-bold text-white">Voting Status</h3>
-                <p className="text-xs text-slate-400 mt-1">{requiredCount} votes required</p>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <span>Evaluation Progress</span>
+                  {isComplete ? (
+                    <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      All Teams Scored
+                    </span>
+                  ) : (
+                    <span className="text-xs font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                      {votedCount} of {requiredCount} Scored
+                    </span>
+                  )}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">{requiredCount} total teams to evaluate</p>
               </div>
-              {state?.timer_running === 1 && (
-                <div className="text-right ml-4">
-                  <div className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Presentation Timer</div>
-                  <div className="text-xl font-mono font-bold text-rose-400 animate-pulse-subtle">
-                    {formatTime(state?.timer_remaining)}
+
+              <div className="flex items-center gap-4">
+                {state?.timer_running === 1 && (
+                  <div className="text-right">
+                    <div className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">Presentation</div>
+                    <div className="text-lg font-mono font-bold text-rose-300">
+                      {formatTime(state?.timer_remaining)}
+                    </div>
                   </div>
-                </div>
-              )}
-              {state?.voting_timer_running === 1 && (
-                <div className="text-right ml-4">
-                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Voting Timer</div>
-                  <div className="text-xl font-mono font-bold text-indigo-400 animate-pulse-subtle">
-                    {formatTime(state?.voting_timer_remaining)}
+                )}
+                {state?.voting_timer_running === 1 && (
+                  <div className="text-right">
+                    <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Voting Timer</div>
+                    <div className="text-lg font-mono font-bold text-indigo-300">
+                      {formatTime(state?.voting_timer_remaining)}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
-              <div className="flex justify-between text-sm font-semibold">
-                <span className="text-slate-300">{votedCount} / {requiredCount} votes completed</span>
-                <span className="text-indigo-400">{Math.round(progressPercent)}%</span>
+              <div className="flex justify-between text-xs font-semibold">
+                <span className="text-slate-300">{votedCount} / {requiredCount} teams scored ({submittedTeamIds.length} submitted)</span>
+                <span className="text-indigo-400 font-mono">{Math.round(progressPercent)}%</span>
               </div>
-              <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-indigo-500 transition-all duration-500 ease-out rounded-full"
                   style={{ width: `${progressPercent}%` }}
                 ></div>
               </div>
             </div>
+
+            {/* Team Navigation Tabs */}
+            {eligibleTeams.length > 1 && (
+              <div className="mt-4 pt-4 border-t border-slate-800">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Select Team to Evaluate</span>
+                  {currentLiveTeamId && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTeamId(currentLiveTeamId)}
+                      className={`text-[11px] font-bold px-2 py-0.5 rounded transition-all flex items-center gap-1 ${
+                        activeTeamId === currentLiveTeamId 
+                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                          : 'bg-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <Radio className="w-3 h-3 text-rose-400 animate-pulse" /> Jump to Live Team
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex gap-1.5 overflow-x-auto pb-1.5 scrollbar-thin">
+                  {eligibleTeams.map((team, idx) => {
+                    const hasScored = scores[team.id] !== undefined && scores[team.id] !== '';
+                    const isSubmitted = submittedTeamIds.includes(team.id);
+                    const isSelected = team.id === currentActiveTeam?.id;
+                    const isLive = team.id === currentLiveTeamId;
+
+                    return (
+                      <button
+                        key={team.id}
+                        type="button"
+                        onClick={() => setActiveTeamId(team.id)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1.5 transition-all shrink-0 ${
+                          isSelected
+                            ? 'bg-indigo-600 text-white shadow-md font-bold'
+                            : isSubmitted
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20'
+                            : hasScored
+                            ? 'bg-slate-800 text-indigo-300 hover:bg-slate-700'
+                            : 'bg-slate-800/40 text-slate-400 hover:bg-slate-800'
+                        }`}
+                      >
+                        {isLive && <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping shrink-0" />}
+                        <span>#{team.presentation_order || idx + 1} {team.team_name.length > 12 ? team.team_name.slice(0, 10) + '..' : team.team_name}</span>
+                        {hasScored ? (
+                          <span className={`text-[10px] font-mono px-1 rounded ${isSelected ? 'bg-indigo-700 text-white' : 'bg-indigo-900/40 text-indigo-300'}`}>
+                            {scores[team.id]}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-500 font-mono">--</span>
+                        )}
+                        {isSubmitted && <Check className="w-3 h-3 text-emerald-400 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {error && (
@@ -262,183 +495,348 @@ export default function VoterEvaluationView({ user, onLogout }) {
             </div>
           )}
 
-          <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
-            {(() => {
-              const currentTeamId = state?.current_team_id;
-              const currentTeam = currentTeamId ? teams.find(t => t.id === currentTeamId) : null;
-              
-              if (!currentTeam) {
-                return (
-                  <div className="surface-card p-10 text-center space-y-4 border border-dashed border-slate-700/50 animate-fade-up">
-                    <div className="w-16 h-16 bg-[#111315] rounded-full flex items-center justify-center mx-auto text-[#55585C]">
-                      <Eye className="w-8 h-8" />
+          {/* Active Evaluation Card */}
+          {currentActiveTeam ? (
+            <div className="surface-card p-5 sm:p-6 transition-all duration-300 border border-[#C9C9C9]">
+              <div className="flex flex-col gap-5">
+                
+                {/* Team Info Header */}
+                <div className="flex justify-between items-start gap-4 pb-4 border-b border-[#C9C9C9]">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#111315]/5 text-[#55585C]">
+                        Team #{currentActiveTeam.presentation_order || currentTeamIndex + 1} of {eligibleTeams.length}
+                      </span>
+                      {currentActiveTeam.id === currentLiveTeamId && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-600 border border-rose-500/20 flex items-center gap-1">
+                          <Radio className="w-3 h-3 text-rose-500 animate-pulse" /> LIVE NOW
+                        </span>
+                      )}
+                      {submittedTeamIds.includes(currentActiveTeam.id) && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center gap-1">
+                          <Check className="w-3 h-3" /> Submitted
+                        </span>
+                      )}
                     </div>
-                    <h3 className="text-xl font-bold text-[#111315]">Waiting for Next Team</h3>
-                    <p className="text-sm text-[#55585C]">The Administrator has not yet started a presentation. Please wait for the next team to appear here.</p>
-                  </div>
-                );
-              }
-
-              const team = currentTeam;
-              const index = teams.findIndex(t => t.id === team.id);
-              const ownTeam = isOwnTeam(team.id);
-              const hasScore = scores[team.id] !== undefined && scores[team.id] !== '';
-
-              if (ownTeam) {
-                return (
-                  <div key={team.id} className="surface-card p-6 border-dashed border-slate-700/50 flex flex-col items-center text-center gap-4 animate-fade-up">
-                    <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center text-rose-500 mb-2">
-                      <AlertCircle className="w-8 h-8" />
+                    <h3 className="text-xl font-bold text-[#111315] leading-tight mt-1">{currentActiveTeam.team_name}</h3>
+                    <div className="text-sm text-[#55585C] mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                      <span>{currentActiveTeam.college_name}</span>
+                      {currentActiveTeam.department && <span>&bull; {currentActiveTeam.department}</span>}
                     </div>
-                    <div>
-                      <span className="inline-block px-3 py-1 bg-rose-500/10 text-rose-500 rounded text-[11px] font-bold tracking-wider mb-3">YOUR TEAM - NOT ELIGIBLE</span>
-                      <div className="font-bold text-[#111315] text-xl">{team.team_name}</div>
-                      <div className="text-sm text-[#55585C] mt-1">{team.college_name}</div>
-                    </div>
-                    <p className="text-sm text-[#55585C] mt-2 max-w-sm">
-                      You are not allowed to evaluate your own team. Please wait for the next presentation.
-                    </p>
-                  </div>
-                );
-              }
-
-              const currentScore = hasScore ? scores[team.id] : 0;
-              const isLocked = !!localStorage.getItem(`eduinspire_locked_${user.userId}_${team.id}`);
-
-              return (
-                <div key={team.id} className="surface-card p-4 sm:p-6 transition-all duration-300 animate-fade-up border border-[#C9C9C9]">
-                  <div className="flex flex-col gap-5">
-                    
-                    {/* Team Header */}
-                    <div className="flex justify-between items-start gap-4 pb-5 border-b border-[#C9C9C9]">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#111315]/5 text-[#55585C]">Team #{team.presentation_order || index + 1}</span>
-                          <span className="text-lg font-bold text-[#111315] leading-tight">{team.team_name}</span>
-                          {isLocked && <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> LOCKED</span>}
-                        </div>
-                        <div className="text-sm text-[#55585C] flex flex-wrap gap-x-4 gap-y-1">
-                          <span>{team.college_name}</span>
-                          {team.department && <span>&bull; {team.department}</span>}
-                        </div>
-                        {team.project_title && (
-                          <div className="text-sm font-medium text-[#111315] mt-2">{team.project_title}</div>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end shrink-0">
-                        <div className={`px-4 py-2 border rounded-xl font-mono font-bold text-2xl shadow-sm transition-colors ${
-                          hasScore ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-[#C9C9C9] text-[#55585C]'
-                        }`}>
-                          {hasScore ? currentScore : '--'} <span className="text-[#55585C] font-normal text-sm">/ 100</span>
-                        </div>
-                        <div className="text-[10px] font-bold text-[#55585C] mt-1.5 uppercase tracking-wider">Total Score</div>
-                      </div>
-                    </div>
-
-                    {isLocked ? (
-                      <div className="py-12 text-center flex flex-col items-center justify-center">
-                        <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500 mb-4 shadow-sm">
-                          <Check className="w-8 h-8" />
-                        </div>
-                        <h4 className="text-lg font-bold text-[#111315] mb-2">Evaluation Submitted</h4>
-                        <p className="text-sm text-[#55585C]">Your evaluation has been recorded locally.</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4 pt-2">
-                        <h3 className="text-sm font-bold text-[#111315] uppercase tracking-widest border-l-4 border-[#111315] pl-3">
-                          Evaluation Criteria
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8 mt-6">
-                        {getCriteriaList().map(crit => {
-                          const catVal = categoryScores[team.id]?.[crit.key];
-                          return (
-                            <SliderScore
-                              key={crit.key}
-                              categoryKey={crit.key}
-                              title={crit.title}
-                              max={crit.max}
-                              description={crit.description}
-                              value={catVal !== undefined ? catVal : ''}
-                              onChange={(catKey, val) => handleCategoryChange(team.id, catKey, crit.max, val)}
-                            />
-                          );
-                        })}
-                        </div>
-                        
-                        <div className="flex justify-end pt-8 mt-4 border-t border-[#C9C9C9]">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (currentScore > 0) {
-                                localStorage.setItem(`eduinspire_locked_${user.userId}_${team.id}`, "true");
-                                setScores({...scores}); // force re-render
-                              } else {
-                                alert("Please provide a score before submitting.");
-                              }
-                            }}
-                            className="btn-primary py-3 px-8 shadow-md hover:shadow-lg"
-                          >
-                            <CheckCircle2 className="w-5 h-5" />
-                            Save Evaluation
-                          </button>
-                        </div>
+                    {currentActiveTeam.project_title && (
+                      <div className="text-sm font-medium text-[#111315] mt-2 bg-[#111315]/5 p-2 rounded-lg">
+                        <strong>Project:</strong> {currentActiveTeam.project_title}
                       </div>
                     )}
                   </div>
-                </div>
-              );
-            })()}
 
-            {/* Sticky Submit Bar */}
-            <div className="fixed bottom-0 left-0 right-0 z-30 surface-panel border-t border-slate-800/80 p-4 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
-              <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
-                <div className="hidden sm:block">
-                  {isComplete ? (
-                    <span className="text-emerald-400 text-sm font-bold flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4" /> All votes complete
-                    </span>
-                  ) : (
-                    <span className="text-slate-400 text-sm font-medium">
-                      {requiredCount - votedCount} votes remaining
-                    </span>
+                  <div className="flex flex-col items-end shrink-0">
+                    <div className={`px-4 py-2 border rounded-xl font-mono font-bold text-2xl shadow-sm transition-colors ${
+                      scores[currentActiveTeam.id] !== undefined && scores[currentActiveTeam.id] !== ''
+                        ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
+                        : 'bg-white border-[#C9C9C9] text-[#55585C]'
+                    }`}>
+                      {scores[currentActiveTeam.id] !== undefined && scores[currentActiveTeam.id] !== '' ? scores[currentActiveTeam.id] : '--'} 
+                      <span className="text-[#55585C] font-normal text-xs"> / 100</span>
+                    </div>
+                    <div className="text-[10px] font-bold text-[#55585C] mt-1.5 uppercase tracking-wider">Total Score</div>
+                  </div>
+                </div>
+
+                {/* Criteria Sliders */}
+                <div className="space-y-4 pt-1">
+                  <h4 className="text-xs font-bold text-[#111315] uppercase tracking-widest border-l-4 border-indigo-600 pl-2.5">
+                    Evaluation Criteria
+                  </h4>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mt-4">
+                    {getCriteriaList().map(crit => {
+                      const catVal = categoryScores[currentActiveTeam.id]?.[crit.key];
+                      return (
+                        <SliderScore
+                          key={crit.key}
+                          categoryKey={crit.key}
+                          title={crit.title}
+                          max={crit.max}
+                          description={crit.description}
+                          value={catVal !== undefined ? catVal : ''}
+                          onChange={(catKey, val) => handleCategoryChange(currentActiveTeam.id, catKey, crit.max, val)}
+                        />
+                      );
+                    })}
+                  </div>
+
+                  {/* Navigation & Action Footer within Card */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 mt-4 border-t border-[#C9C9C9]">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <button
+                        type="button"
+                        onClick={handlePrevTeam}
+                        disabled={currentTeamIndex === 0}
+                        className="btn-secondary flex-1 sm:flex-none px-4 py-2.5 text-xs flex items-center justify-center gap-1.5 disabled:opacity-40"
+                      >
+                        <ChevronLeft className="w-4 h-4" /> Previous
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleNextTeam}
+                        disabled={currentTeamIndex === eligibleTeams.length - 1}
+                        className="btn-secondary flex-1 sm:flex-none px-4 py-2.5 text-xs flex items-center justify-center gap-1.5 disabled:opacity-40"
+                      >
+                        Next <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleSingleTeamSubmit(currentActiveTeam.id)}
+                        disabled={submitting}
+                        className="btn-secondary flex-1 sm:flex-none px-4 py-2.5 text-xs flex items-center justify-center gap-1.5 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                      >
+                        <Save className="w-4 h-4 text-emerald-600" />
+                        <span>Submit This Team</span>
+                      </button>
+
+                      {currentTeamIndex < eligibleTeams.length - 1 ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleNextTeam();
+                          }}
+                          className="btn-primary flex-1 sm:flex-none px-5 py-2.5 text-xs flex items-center justify-center gap-1.5"
+                        >
+                          <span>Save & Next</span>
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={openPreview}
+                          className="btn-primary flex-1 sm:flex-none px-5 py-2.5 text-xs flex items-center justify-center gap-1.5"
+                        >
+                          <ListChecks className="w-4 h-4" />
+                          <span>Preview & Finish</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          ) : (
+            <div className="surface-card p-10 text-center space-y-4 border border-dashed border-slate-700">
+              <Eye className="w-8 h-8 mx-auto text-slate-500" />
+              <h3 className="text-lg font-bold text-white">No Teams Available</h3>
+              <p className="text-sm text-slate-400">Waiting for teams to be configured by the administrator.</p>
+            </div>
+          )}
+
+          {/* Sticky Bottom Preview & Finish Bar */}
+          <div className="fixed bottom-0 left-0 right-0 z-30 surface-panel border-t border-slate-800/90 p-3 sm:p-4 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+            <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handlePrevTeam}
+                  disabled={currentTeamIndex <= 0}
+                  className="btn-secondary px-3 py-2 text-xs flex items-center gap-1 disabled:opacity-30"
+                  title="Previous Team"
+                >
+                  <ChevronLeft className="w-4 h-4" /> <span className="hidden sm:inline">Prev</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextTeam}
+                  disabled={currentTeamIndex >= eligibleTeams.length - 1}
+                  className="btn-secondary px-3 py-2 text-xs flex items-center gap-1 disabled:opacity-30"
+                  title="Next Team"
+                >
+                  <span className="hidden sm:inline">Next</span> <ChevronRight className="w-4 h-4" />
+                </button>
+
+                <div className="hidden md:block text-xs text-slate-400 font-medium">
+                  <span>{votedCount} of {requiredCount} teams scored</span>
+                  {submittedTeamIds.length > 0 && (
+                    <span className="text-emerald-400 ml-2 font-bold">({submittedTeamIds.length} submitted)</span>
                   )}
                 </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-1 sm:flex-none justify-end">
                 <button
-                  type="submit"
-                  disabled={submitting || !isComplete}
-                  className="btn-primary w-full sm:w-auto px-8 py-3 text-base flex-1 sm:flex-none justify-center"
+                  type="button"
+                  onClick={handleBottomReviewAndSubmit}
+                  className="btn-secondary px-3.5 py-2 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5"
                 >
-                  <Send className="w-5 h-5" />
-                  Review & Submit
+                  <Eye className="w-4 h-4" />
+                  <span>Preview</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleBottomReviewAndSubmit}
+                  disabled={submitting}
+                  className="btn-primary flex-1 sm:flex-none px-5 py-2.5 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-lg bg-indigo-600 hover:bg-indigo-500 text-white"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>Review & Submit</span>
                 </button>
               </div>
             </div>
-          </form>
+          </div>
 
-          {/* Confirmation Modal */}
-          {showConfirmModal && (
-            <div className="fixed inset-0 z-50 bg-[#0B1120]/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-up">
-              <div className="w-full max-w-sm surface-panel p-4 shadow-2xl relative">
-                <h3 className="text-xl font-bold text-white mb-2">Submit your votes?</h3>
-                <p className="text-sm text-slate-400 mb-6 leading-relaxed">
-                  You must select all required teams before submitting. Once submitted, your vote cannot be edited.
-                </p>
-                <div className="flex gap-3">
+          {/* Full Preview & Finish Modal */}
+          {showPreviewModal && (
+            <div className="fixed inset-0 z-50 bg-[#0B1120]/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-up">
+              <div className="w-full max-w-2xl surface-panel max-h-[85vh] flex flex-col shadow-2xl relative border border-slate-700/80 rounded-2xl overflow-hidden">
+                
+                {/* Modal Header */}
+                <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+                  <div>
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                      <ListChecks className="w-5 h-5 text-indigo-400" />
+                      <span>Evaluation Review & Preview</span>
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Review all team scores before submitting.
+                    </p>
+                  </div>
                   <button 
-                    onClick={() => setShowConfirmModal(false)}
-                    disabled={submitting}
-                    className="btn-secondary flex-1"
+                    onClick={() => setShowPreviewModal(false)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
                   >
-                    Cancel
-                  </button>
-                  <button 
-                    onClick={handleSubmit}
-                    disabled={submitting}
-                    className="btn-primary flex-1"
-                  >
-                    {submitting ? 'Submitting...' : 'Submit Vote'}
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
+
+                {/* Modal Content / Team Score List */}
+                <div className="p-5 overflow-y-auto space-y-3 flex-1">
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-slate-800/40 border border-slate-800 text-xs">
+                    <div className="text-slate-300 font-medium">
+                      Scored: <strong className={votedCount > 0 ? 'text-emerald-400' : 'text-amber-400'}>{votedCount} / {requiredCount} Teams</strong>
+                    </div>
+                    {votedCount > 0 ? (
+                      <span className="text-emerald-400 font-bold flex items-center gap-1">
+                        <CheckCircle2 className="w-4 h-4" /> Ready to submit {votedCount} score{votedCount > 1 ? 's' : ''}
+                      </span>
+                    ) : (
+                      <span className="text-rose-400 font-bold flex items-center gap-1">
+                        <AlertTriangle className="w-4 h-4" /> No scores entered yet
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="divide-y divide-slate-800/80 rounded-xl border border-slate-800 bg-slate-900/30 overflow-hidden">
+                    {eligibleTeams.map((team, idx) => {
+                      const hasScored = scores[team.id] !== undefined && scores[team.id] !== '';
+                      const isSubmitted = submittedTeamIds.includes(team.id);
+                      const teamScore = hasScored ? scores[team.id] : null;
+                      const catData = categoryScores[team.id] || {};
+
+                      return (
+                        <div 
+                          key={team.id} 
+                          className="p-3.5 flex items-center justify-between gap-4 hover:bg-slate-800/30 transition-colors"
+                        >
+                          <div className="flex items-start gap-3 min-w-0">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${
+                              isSubmitted
+                                ? 'bg-emerald-500/20 text-emerald-400'
+                                : hasScored 
+                                ? 'bg-indigo-500/20 text-indigo-400' 
+                                : 'bg-slate-800 text-slate-500'
+                            }`}>
+                              {hasScored ? <Check className="w-4 h-4" /> : idx + 1}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-sm font-bold text-white truncate flex items-center gap-2">
+                                <span>{team.team_name}</span>
+                                <span className="text-[10px] text-slate-500 font-mono">#{team.presentation_order || idx + 1}</span>
+                                {isSubmitted && (
+                                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                    Submitted
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-slate-400 truncate">{team.college_name}</div>
+                              {hasScored && (
+                                <div className="text-[11px] text-slate-400 mt-1 flex flex-wrap gap-x-2">
+                                  {getCriteriaList().map(c => (
+                                    <span key={c.key} className="text-slate-400">
+                                      {c.title.split('.')[0]}: <strong className="text-slate-200">{catData[c.key] || 0}</strong>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 shrink-0">
+                            <div className="text-right">
+                              {hasScored ? (
+                                <div className="font-mono font-bold text-base text-indigo-400">
+                                  {teamScore} <span className="text-[10px] text-slate-500">/ 100</span>
+                                </div>
+                              ) : (
+                                <span className="text-xs font-medium text-slate-500 bg-slate-800 px-2 py-0.5 rounded">
+                                  Not Scored
+                                </span>
+                              )}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveTeamId(team.id);
+                                setShowPreviewModal(false);
+                              }}
+                              className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                              title="Edit score for this team"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="p-4 border-t border-slate-800 bg-slate-900/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="text-xs text-slate-400 text-center sm:text-left">
+                    {votedCount === requiredCount ? (
+                      <span className="text-emerald-400">All teams scored! Click submit to record all evaluations.</span>
+                    ) : votedCount > 0 ? (
+                      <span className="text-slate-300">Ready to submit {votedCount} scored team(s).</span>
+                    ) : (
+                      <span className="text-amber-400 font-semibold">Please score at least one team before submitting.</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                    <button 
+                      type="button"
+                      onClick={() => setShowPreviewModal(false)}
+                      disabled={submitting}
+                      className="btn-secondary flex-1 sm:flex-none px-4 py-2 text-xs"
+                    >
+                      Back to Editing
+                    </button>
+
+                    <button 
+                      type="button"
+                      onClick={handleSubmitAll}
+                      disabled={submitting || votedCount === 0}
+                      className="btn-primary flex-1 sm:flex-none px-6 py-2 text-xs font-bold shadow-lg disabled:opacity-40"
+                    >
+                      {submitting ? 'Submitting...' : `Submit ${votedCount > 0 ? `${votedCount} Team Votes` : 'Votes'}`}
+                    </button>
+                  </div>
+                </div>
+
               </div>
             </div>
           )}

@@ -99,17 +99,50 @@ export default function AdminDashboard({ onNavigate }) {
     return () => clearInterval(tick);
   }, [isVotingRunning]);
 
-  const handleVotingAction = async (action) => {
+  const handleOpenVotingTimerEdit = () => {
+    const total = (isVotingOpen && displaySeconds != null) 
+      ? displaySeconds 
+      : (eventState?.voting_timer_seconds || 1200);
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    setVHours(h);
+    setVMinutes(m);
+    setVSeconds(s);
+    setIsEditingTimer(true);
+  };
+
+  const handleSaveVotingTimer = async () => {
+    const durationSeconds = (parseInt(vHours) || 0) * 3600 + (parseInt(vMinutes) || 0) * 60 + (parseInt(vSeconds) || 0);
+    if (durationSeconds <= 0) {
+      alert("Please enter a duration greater than 0 seconds.");
+      return;
+    }
+    await handleVotingAction('EDIT', durationSeconds);
+  };
+
+  const handleOpenPTimerEdit = () => {
+    const total = eventState?.timer_remaining ?? (eventState?.timer_seconds || 420);
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    setPHours(h);
+    setPMinutes(m);
+    setPSeconds(s);
+    setIsEditingPTimer(true);
+  };
+
+  const handleVotingAction = async (action, explicitDuration = null) => {
     setActionLoading(true);
-    let durationSeconds = 0;
-    if (action === 'START' || action === 'EDIT') {
-      durationSeconds = (vHours * 3600) + (vMinutes * 60) + vSeconds;
+    let durationSeconds = explicitDuration;
+    if (durationSeconds == null && (action === 'START' || action === 'EDIT')) {
+      durationSeconds = (parseInt(vHours) || 0) * 3600 + (parseInt(vMinutes) || 0) * 60 + (parseInt(vSeconds) || 0);
     }
     try {
       await fetch('/api/event/voting/global-update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, durationSeconds })
+        body: JSON.stringify({ action, durationSeconds: durationSeconds || undefined })
       });
       setIsEditingTimer(false);
       fetchDashboard(true);
@@ -336,37 +369,56 @@ export default function AdminDashboard({ onNavigate }) {
               </div>
               
               {isEditingPTimer ? (
-                <div className="flex items-center gap-2 mt-3 animate-fade-up">
-                  <input
-                    type="number" min="0" max="23"
-                    className="form-input w-14 text-center text-xs py-1"
-                    value={pHours} onChange={e => setPHours(Number(e.target.value))}
-                  />
-                  <span className="text-slate-500 font-bold">:</span>
-                  <input
-                    type="number" min="0" max="59"
-                    className="form-input w-14 text-center text-xs py-1"
-                    value={pMinutes} onChange={e => setPMinutes(Number(e.target.value))}
-                  />
-                  <span className="text-slate-500 font-bold">:</span>
-                  <input
-                    type="number" min="0" max="59"
-                    className="form-input w-14 text-center text-xs py-1"
-                    value={pSeconds} onChange={e => setPSeconds(Number(e.target.value))}
-                  />
-                  <button
-                    disabled={actionLoading}
-                    onClick={() => handlePresentationAction('EDIT')}
-                    className="btn-primary text-xs py-1 px-3 ml-1"
-                  >
-                    Save
-                  </button>
-                  <button onClick={() => setIsEditingPTimer(false)} className="btn-secondary text-xs py-1 px-3">
-                    Cancel
-                  </button>
+                <div className="flex items-center gap-1.5 mt-3 animate-fade-up bg-slate-100 p-2 rounded-xl border border-slate-300">
+                  <div className="flex flex-col items-center">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase">Hr</span>
+                    <input
+                      type="number" min="0" max="23"
+                      className="w-12 h-9 text-center text-sm font-mono font-bold bg-white border border-slate-300 rounded-lg focus:border-indigo-600 focus:ring-1 focus:ring-indigo-200 outline-none text-[#111315]"
+                      value={pHours} 
+                      onChange={e => setPHours(e.target.value === '' ? '' : Math.max(0, parseInt(e.target.value) || 0))}
+                    />
+                  </div>
+                  <span className="text-slate-400 font-bold text-base mt-3">:</span>
+                  <div className="flex flex-col items-center">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase">Min</span>
+                    <input
+                      type="number" min="0" max="59"
+                      className="w-12 h-9 text-center text-sm font-mono font-bold bg-white border border-slate-300 rounded-lg focus:border-indigo-600 focus:ring-1 focus:ring-indigo-200 outline-none text-[#111315]"
+                      value={pMinutes} 
+                      onChange={e => setPMinutes(e.target.value === '' ? '' : Math.min(59, Math.max(0, parseInt(e.target.value) || 0)))}
+                    />
+                  </div>
+                  <span className="text-slate-400 font-bold text-base mt-3">:</span>
+                  <div className="flex flex-col items-center">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase">Sec</span>
+                    <input
+                      type="number" min="0" max="59"
+                      className="w-12 h-9 text-center text-sm font-mono font-bold bg-white border border-slate-300 rounded-lg focus:border-indigo-600 focus:ring-1 focus:ring-indigo-200 outline-none text-[#111315]"
+                      value={pSeconds} 
+                      onChange={e => setPSeconds(e.target.value === '' ? '' : Math.min(59, Math.max(0, parseInt(e.target.value) || 0)))}
+                    />
+                  </div>
+                  <div className="flex items-center gap-1 ml-2 mt-3">
+                    <button
+                      type="button"
+                      disabled={actionLoading}
+                      onClick={() => handlePresentationAction('EDIT')}
+                      className="btn-primary text-xs py-1.5 px-3 h-9"
+                    >
+                      Save
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setIsEditingPTimer(false)} 
+                      className="btn-secondary text-xs py-1.5 px-3 h-9"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <button onClick={() => setIsEditingPTimer(true)} className="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1 mt-1">
+                <button onClick={handleOpenPTimerEdit} className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold flex items-center gap-1 mt-1">
                   <Edit2 className="w-3.5 h-3.5" /> Edit Duration
                 </button>
               )}
@@ -396,41 +448,69 @@ export default function AdminDashboard({ onNavigate }) {
             <div className="space-y-1">
               <h4 className="text-xs font-semibold text-[#55585C] uppercase tracking-wider">Voting Timer</h4>
               <div className="text-4xl font-mono font-bold tracking-tight text-[#111315]">
-                {isVotingOpen ? formatTime(displaySeconds) : '--:--'}
+                {isVotingOpen ? (
+                  formatTime(displaySeconds)
+                ) : (
+                  <div className="flex items-baseline gap-2">
+                    <span>--:--</span>
+                    <span className="text-xs font-sans font-semibold text-slate-500">
+                      (Set: {formatTime(eventState?.voting_timer_seconds || 1200)})
+                    </span>
+                  </div>
+                )}
               </div>
               
               {isEditingTimer ? (
-                <div className="flex items-center gap-2 mt-3 animate-fade-up">
-                  <input
-                    type="number" min="0" max="23"
-                    className="form-input w-14 text-center text-xs py-1"
-                    value={vHours} onChange={e => setVHours(Number(e.target.value))}
-                  />
-                  <span className="text-slate-500 font-bold">:</span>
-                  <input
-                    type="number" min="0" max="59"
-                    className="form-input w-14 text-center text-xs py-1"
-                    value={vMinutes} onChange={e => setVMinutes(Number(e.target.value))}
-                  />
-                  <span className="text-slate-500 font-bold">:</span>
-                  <input
-                    type="number" min="0" max="59"
-                    className="form-input w-14 text-center text-xs py-1"
-                    value={vSeconds} onChange={e => setVSeconds(Number(e.target.value))}
-                  />
-                  <button
-                    disabled={actionLoading}
-                    onClick={() => handleVotingAction(isVotingOpen ? 'EDIT' : 'START')}
-                    className="btn-primary text-xs py-1 px-3 ml-1"
-                  >
-                    Save
-                  </button>
-                  <button onClick={() => setIsEditingTimer(false)} className="btn-secondary text-xs py-1 px-3">
-                    Cancel
-                  </button>
+                <div className="flex items-center gap-1.5 mt-3 animate-fade-up bg-slate-100 p-2 rounded-xl border border-slate-300">
+                  <div className="flex flex-col items-center">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase">Hr</span>
+                    <input
+                      type="number" min="0" max="23"
+                      className="w-12 h-9 text-center text-sm font-mono font-bold bg-white border border-slate-300 rounded-lg focus:border-indigo-600 focus:ring-1 focus:ring-indigo-200 outline-none text-[#111315]"
+                      value={vHours} 
+                      onChange={e => setVHours(e.target.value === '' ? '' : Math.max(0, parseInt(e.target.value) || 0))}
+                    />
+                  </div>
+                  <span className="text-slate-400 font-bold text-base mt-3">:</span>
+                  <div className="flex flex-col items-center">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase">Min</span>
+                    <input
+                      type="number" min="0" max="59"
+                      className="w-12 h-9 text-center text-sm font-mono font-bold bg-white border border-slate-300 rounded-lg focus:border-indigo-600 focus:ring-1 focus:ring-indigo-200 outline-none text-[#111315]"
+                      value={vMinutes} 
+                      onChange={e => setVMinutes(e.target.value === '' ? '' : Math.min(59, Math.max(0, parseInt(e.target.value) || 0)))}
+                    />
+                  </div>
+                  <span className="text-slate-400 font-bold text-base mt-3">:</span>
+                  <div className="flex flex-col items-center">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase">Sec</span>
+                    <input
+                      type="number" min="0" max="59"
+                      className="w-12 h-9 text-center text-sm font-mono font-bold bg-white border border-slate-300 rounded-lg focus:border-indigo-600 focus:ring-1 focus:ring-indigo-200 outline-none text-[#111315]"
+                      value={vSeconds} 
+                      onChange={e => setVSeconds(e.target.value === '' ? '' : Math.min(59, Math.max(0, parseInt(e.target.value) || 0)))}
+                    />
+                  </div>
+                  <div className="flex items-center gap-1 ml-2 mt-3">
+                    <button
+                      type="button"
+                      disabled={actionLoading}
+                      onClick={handleSaveVotingTimer}
+                      className="btn-primary text-xs py-1.5 px-3 h-9"
+                    >
+                      Save
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setIsEditingTimer(false)} 
+                      className="btn-secondary text-xs py-1.5 px-3 h-9"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <button onClick={() => setIsEditingTimer(true)} className="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1 mt-1">
+                <button onClick={handleOpenVotingTimerEdit} className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold flex items-center gap-1 mt-1">
                   <Edit2 className="w-3.5 h-3.5" /> Edit Duration
                 </button>
               )}
