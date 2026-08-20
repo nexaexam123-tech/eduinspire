@@ -240,26 +240,7 @@ export default function LoginView({ onLoginSuccess }) {
                 <button type="submit" disabled={loading} className="btn-primary w-full mt-2">
                   {loading ? 'Authenticating...' : 'Sign In'}
                 </button>
-                
-                {viewState === 'ADMIN_LOGIN' && (
-                  <div className="text-center pt-4 border-t border-[#C9C9C9] mt-6">
-                    <p className="text-[13px] font-medium text-[#55585C]">
-                      Default Admin ID: <strong className="text-[#111315]">admin</strong>
-                      <br />
-                      Password: <strong className="text-[#111315]">admin123</strong>
-                    </p>
-                  </div>
-                )}
-                
-                {viewState === 'JUDGE_LOGIN' && (
-                  <div className="text-center pt-4 border-t border-[#C9C9C9] mt-6">
-                    <p className="text-[13px] font-medium text-[#55585C]">
-                      Default Judge ID: <strong className="text-[#111315]">JUDGEPORTAL</strong>
-                      <br />
-                      Password: <strong className="text-[#111315]">JKEY2026</strong>
-                    </p>
-                  </div>
-                )}
+
               </form>
             </div>
           )}
