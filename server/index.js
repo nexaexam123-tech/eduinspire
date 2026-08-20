@@ -2,9 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import xlsx from 'xlsx';
-import { Resend } from 'resend';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import nodemailer from 'nodemailer';
 import 'dotenv/config';
 import db, { initDatabase } from './db.js';
 
@@ -151,39 +149,56 @@ app.post('/api/auth/request-otp', async (req, res) => {
 
   db.prepare('UPDATE users SET otp_code = ?, otp_expiry = ? WHERE id = ?').run(otp, expiry, user.id);
 
-  const htmlBody = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
-      <h2 style="color: #4f46e5;">EduInspire Voting Portal</h2>
-      <p>Your one-time password (OTP) for audience voting is:</p>
-      <div style="background-color: #f1f5f9; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; border-radius: 8px; margin: 20px 0;">
-        ${otp}
+  // Configure Nodemailer Transporter
+  // Use port 587 (STARTTLS) by default — more reliable on cloud platforms like Render.
+  // Port 465 (SMTPS) is often blocked by cloud providers on free tier.
+  const smtpPort = parseInt(process.env.SMTP_PORT, 10) || 587;
+  const smtpSecure = smtpPort === 465; // true only for 465 (SSL), false for 587 (STARTTLS)
+
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: smtpPort,
+    secure: smtpSecure,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
+
+  const mailOptions = {
+    from: `"EduInspire Event Portal" <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}>`,
+    to: cleanEmail,
+    subject: 'Your Audience Voting OTP - EduInspire',
+    text: `Your OTP for audience voting is: ${otp}\nThis code is valid for 10 minutes.\nDo not share this code with anyone.`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
+        <h2 style="color: #4f46e5;">EduInspire Voting Portal</h2>
+        <p>Your one-time password (OTP) for audience voting is:</p>
+        <div style="background-color: #f1f5f9; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; border-radius: 8px; margin: 20px 0;">
+          ${otp}
+        </div>
+        <p style="color: #64748b; font-size: 14px;">This code is valid for 10 minutes. Please do not share this code with anyone.</p>
       </div>
-      <p style="color: #64748b; font-size: 14px;">This code is valid for 10 minutes. Please do not share this code with anyone.</p>
-    </div>
-  `;
+    `
+  };
 
   try {
-    if (process.env.RESEND_API_KEY) {
-      // Use Resend for reliable transactional email delivery
-      const { error: resendError } = await resend.emails.send({
-        from: 'EduInspire Event Portal <onboarding@resend.dev>',
-        to: [cleanEmail],
-        subject: 'Your Audience Voting OTP - EduInspire',
-        html: htmlBody,
-      });
-      if (resendError) throw new Error(resendError.message);
-      console.log(`[RESEND EMAIL SERVICE] -> Sent to: ${cleanEmail}`);
+    if (process.env.SMTP_USER && process.env.SMTP_PASS && process.env.SMTP_USER !== 'your-email@gmail.com') {
+      await transporter.sendMail(mailOptions);
+      console.log(`[SMTP EMAIL SERVICE] -> Sent to: ${cleanEmail} via port ${smtpPort}`);
     } else {
-      // Mock mode: log OTP to console when no API key is configured
       console.log(`\n====================================================`);
       console.log(` [MOCK EMAIL SERVICE] -> Sent to: ${cleanEmail}`);
       console.log(` [OTP CODE]: ${otp} (Valid for 10 minutes)`);
-      console.log(` Note: Set RESEND_API_KEY env var to send real emails.`);
+      console.log(` Note: Configure .env with valid SMTP credentials to send real emails.`);
       console.log(`====================================================\n`);
     }
     res.json({ success: true, message: 'OTP sent to your email.' });
   } catch (error) {
-    console.error('Email Error:', error);
+    console.error('SMTP Error:', error);
     res.status(500).json({ error: 'Failed to send OTP email. Please contact administrator.' });
   }
 });
