@@ -3,14 +3,19 @@ import 'dotenv/config';
 
 // Create connection pool configuration
 function getPoolConfig() {
+  const isCloudHost = process.env.MYSQL_HOST && process.env.MYSQL_HOST !== 'localhost' && process.env.MYSQL_HOST !== '127.0.0.1';
+  const useSsl = process.env.MYSQL_SSL === 'true' || isCloudHost;
+
   if (process.env.MYSQL_URL || process.env.DATABASE_URL) {
+    const uri = process.env.MYSQL_URL || process.env.DATABASE_URL;
     return {
-      uri: process.env.MYSQL_URL || process.env.DATABASE_URL,
+      uri,
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
       enableKeepAlive: true,
-      keepAliveInitialDelay: 0
+      keepAliveInitialDelay: 0,
+      ssl: process.env.MYSQL_SSL === 'false' ? undefined : { rejectUnauthorized: false }
     };
   }
 
@@ -24,7 +29,8 @@ function getPoolConfig() {
     connectionLimit: 10,
     queueLimit: 0,
     enableKeepAlive: true,
-    keepAliveInitialDelay: 0
+    keepAliveInitialDelay: 0,
+    ssl: useSsl && process.env.MYSQL_SSL !== 'false' ? { rejectUnauthorized: false } : undefined
   };
 }
 
@@ -42,21 +48,28 @@ function generateAccessCode() {
 
 export async function initDatabase() {
   try {
-    // 1. Ensure database exists (when connecting to local MySQL server)
+    // 1. Ensure database exists (for local MySQL instances)
     if (!process.env.MYSQL_URL && !process.env.DATABASE_URL) {
-      const tempConnection = await mysql.createConnection({
-        host: process.env.MYSQL_HOST || 'localhost',
-        port: parseInt(process.env.MYSQL_PORT, 10) || 3306,
-        user: process.env.MYSQL_USER || 'root',
-        password: process.env.MYSQL_PASSWORD || ''
-      });
-      const dbName = process.env.MYSQL_DATABASE || 'eduinspire';
-      await tempConnection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`);
-      await tempConnection.end();
+      try {
+        const isCloudHost = process.env.MYSQL_HOST && process.env.MYSQL_HOST !== 'localhost' && process.env.MYSQL_HOST !== '127.0.0.1';
+        const tempConnection = await mysql.createConnection({
+          host: process.env.MYSQL_HOST || 'localhost',
+          port: parseInt(process.env.MYSQL_PORT, 10) || 3306,
+          user: process.env.MYSQL_USER || 'root',
+          password: process.env.MYSQL_PASSWORD || '',
+          ssl: isCloudHost && process.env.MYSQL_SSL !== 'false' ? { rejectUnauthorized: false } : undefined
+        });
+        const dbName = process.env.MYSQL_DATABASE || 'eduinspire';
+        await tempConnection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`);
+        await tempConnection.end();
+      } catch (dbCreateErr) {
+        console.log('[MySQL Notice] Skipping raw CREATE DATABASE step:', dbCreateErr.message);
+      }
     }
 
-    // 2. Re-create pool with database selected if needed
+    // 2. Re-create pool with database selected
     db = mysql.createPool(getPoolConfig());
+
 
     // 3. Create Tables
     // Admins table
