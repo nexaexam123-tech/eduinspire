@@ -178,28 +178,36 @@ export default function TeamManagement() {
         "College Name": "IIT Madras",
         "Department Name": "Computer Science & Engineering",
         "Faculty 1": "Dr. Ramesh Kumar (Lead)",
-        "Faculty 2": "Prof. Anitha Sundaram (Co-Lead)"
+        "Faculty 1 Email ID": "ramesh.kumar@iitm.ac.in",
+        "Faculty 2": "Prof. Anitha Sundaram (Co-Lead)",
+        "Faculty 2 Email ID": "anitha.s@iitm.ac.in"
       },
       {
         "Team Name": "Solar Microgrid Optimization using IoT Edge Nodes for Remote Campuses",
         "College Name": "Anna University, Chennai",
         "Department Name": "Electrical & Electronics Engg",
         "Faculty 1": "Dr. Senthil Nathan",
-        "Faculty 2": "Dr. Priya Venkatesh"
+        "Faculty 1 Email ID": "senthil@annauniv.edu",
+        "Faculty 2": "Dr. Priya Venkatesh",
+        "Faculty 2 Email ID": "priya.v@annauniv.edu"
       },
       {
         "Team Name": "Early Diagnostic Screening of Diabetic Retinopathy via Mobile Vision AI",
         "College Name": "BITS Pilani",
         "Department Name": "Biotechnology & Bio-Engineering",
         "Faculty 1": "Prof. Rajesh Menon",
-        "Faculty 2": "Dr. Shalini Gupta"
+        "Faculty 1 Email ID": "rajesh.menon@bits-pilani.ac.in",
+        "Faculty 2": "Dr. Shalini Gupta",
+        "Faculty 2 Email ID": "shalini.g@bits-pilani.ac.in"
       },
       {
         "Team Name": "Blockchain-Verified Decentralized Academic Credential System",
         "College Name": "Delhi Technological University",
         "Department Name": "Information Technology",
         "Faculty 1": "Dr. Amit Sharma",
-        "Faculty 2": "Prof. Meenakshi Rao"
+        "Faculty 1 Email ID": "amit.sharma@dtu.ac.in",
+        "Faculty 2": "Prof. Meenakshi Rao",
+        "Faculty 2 Email ID": "meenakshi.rao@dtu.ac.in"
       }
     ];
 
@@ -209,14 +217,17 @@ export default function TeamManagement() {
 
     worksheet["!cols"] = [
       { wch: 65 }, // Team Name
-      { wch: 35 }, // College Name
-      { wch: 35 }, // Department Name
+      { wch: 32 }, // College Name
+      { wch: 32 }, // Department Name
       { wch: 25 }, // Faculty 1
-      { wch: 25 }  // Faculty 2
+      { wch: 35 }, // Faculty 1 Email ID
+      { wch: 25 }, // Faculty 2
+      { wch: 35 }  // Faculty 2 Email ID
     ];
 
     xlsx.writeFile(workbook, "EduInspire_Teams_Sample_Template.xlsx");
   };
+
 
   return (
     <div className="space-y-5 text-slate-900">
