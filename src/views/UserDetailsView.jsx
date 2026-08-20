@@ -14,9 +14,16 @@ export default function UserDetailsView() {
   const [emailMessage, setEmailMessage] = useState(null);
 
   // Delete state
-  const [deleteConfirmUser, setDeleteConfirmUser] = useState(null); // user object to confirm deletion
+  const [deleteConfirmUser, setDeleteConfirmUser] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteMessage, setDeleteMessage] = useState(null);
+
+  // Tie Breaker state
+  const [tbTeam1, setTbTeam1] = useState('');
+  const [tbTeam2, setTbTeam2] = useState('');
+  const [tbWinner, setTbWinner] = useState(null);
+  const [tbSpinning, setTbSpinning] = useState(false);
+  const [tbDisplay, setTbDisplay] = useState('');
 
   const fileInputRef = useRef(null);
 
@@ -129,13 +136,6 @@ export default function UserDetailsView() {
       </div>
     );
   }
-
-  // ── Tie Breaker state ──
-  const [tbTeam1, setTbTeam1] = useState('');
-  const [tbTeam2, setTbTeam2] = useState('');
-  const [tbWinner, setTbWinner] = useState(null);
-  const [tbSpinning, setTbSpinning] = useState(false);
-  const [tbDisplay, setTbDisplay] = useState('');
 
   const handleTieBreaker = () => {
     if (!tbTeam1.trim() || !tbTeam2.trim()) return;
