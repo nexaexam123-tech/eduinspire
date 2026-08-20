@@ -25,6 +25,47 @@ export default function UserDetailsView() {
   const [tbSpinning, setTbSpinning] = useState(false);
   const [tbDisplay, setTbDisplay] = useState('');
 
+  // Email state
+  const [sendingAll, setSendingAll] = useState(false);
+  const [sendingSingleId, setSendingSingleId] = useState(null);
+
+  const handleSendAllCredentials = async () => {
+    if (!window.confirm('Are you sure you want to send User ID and Password emails to ALL participants?')) {
+      return;
+    }
+    setSendingAll(true);
+    setUploadMessage(null);
+    try {
+      const res = await fetch('/api/credentials/send-all-participants', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send credentials.');
+      setUploadMessage({ type: 'success', text: data.message });
+    } catch (err) {
+      setUploadMessage({ type: 'error', text: err.message });
+    } finally {
+      setSendingAll(false);
+    }
+  };
+
+  const handleSendSingleCredential = async (userId) => {
+    setSendingSingleId(userId);
+    setUploadMessage(null);
+    try {
+      const res = await fetch('/api/credentials/send-single', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send credential.');
+      setUploadMessage({ type: 'success', text: data.message });
+    } catch (err) {
+      setUploadMessage({ type: 'error', text: err.message });
+    } finally {
+      setSendingSingleId(null);
+    }
+  };
+
   const fileInputRef = useRef(null);
 
   const fetchUsers = async () => {
@@ -266,6 +307,17 @@ export default function UserDetailsView() {
             >
               <Users className="w-4 h-4" /> Export Users
             </button>
+            {activeTab === 'PARTICIPANT' && (
+              <button
+                onClick={handleSendAllCredentials}
+                disabled={sendingAll}
+                className="py-2 text-xs flex items-center gap-1.5 px-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl transition-all shadow-sm disabled:opacity-50"
+                title="Send User IDs and Passwords to all participants via email"
+              >
+                <Mail className={`w-3.5 h-3.5 ${sendingAll ? 'animate-spin' : ''}`} />
+                <span>{sendingAll ? 'Sending...' : 'Send Passwords to All'}</span>
+              </button>
+            )}
             {(activeTab === 'PARTICIPANT' || activeTab === 'AUDIENCE') && (
               <>
                 <input type="file" accept=".xlsx,.xls" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
@@ -282,6 +334,7 @@ export default function UserDetailsView() {
                 </button>
               </>
             )}
+
           </div>
         </div>
 

@@ -27,6 +27,47 @@ export default function CredentialsView() {
     fetchCredentials();
   }, []);
 
+  const [sendingAll, setSendingAll] = useState(false);
+  const [sendingSingleId, setSendingSingleId] = useState(null);
+  const [actionMessage, setActionMessage] = useState(null);
+
+  const handleSendAllCredentials = async () => {
+    if (!window.confirm('Are you sure you want to send User ID and Password emails to ALL participants?')) {
+      return;
+    }
+    setSendingAll(true);
+    setActionMessage(null);
+    try {
+      const res = await fetch('/api/credentials/send-all-participants', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send credentials.');
+      setActionMessage({ type: 'success', text: data.message });
+    } catch (err) {
+      setActionMessage({ type: 'error', text: err.message });
+    } finally {
+      setSendingAll(false);
+    }
+  };
+
+  const handleSendSingleCredential = async (userId) => {
+    setSendingSingleId(userId);
+    setActionMessage(null);
+    try {
+      const res = await fetch('/api/credentials/send-single', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send credential.');
+      setActionMessage({ type: 'success', text: data.message });
+    } catch (err) {
+      setActionMessage({ type: 'error', text: err.message });
+    } finally {
+      setSendingSingleId(null);
+    }
+  };
+
   const handleCopy = (text, id) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
@@ -105,7 +146,16 @@ export default function CredentialsView() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleSendAllCredentials}
+            disabled={sendingAll}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold rounded-xl flex items-center gap-1.5 transition-all shadow-md disabled:opacity-50"
+            title="Email User IDs & Passwords to all participants"
+          >
+            <Mail className={`w-3.5 h-3.5 ${sendingAll ? 'animate-spin' : ''}`} />
+            <span>{sendingAll ? 'Sending Emails...' : 'Send Passwords to All Participants'}</span>
+          </button>
           <button
             onClick={exportCSV}
             className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all"
@@ -122,6 +172,15 @@ export default function CredentialsView() {
           </button>
         </div>
       </div>
+
+      {actionMessage && (
+        <div className={`p-4 rounded-xl text-sm font-bold border animate-fade-up shadow-sm ${
+          actionMessage.type === 'success' ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-rose-50 border-rose-300 text-rose-800'
+        }`}>
+          {actionMessage.text}
+        </div>
+      )}
+
 
       {/* Generate Extra Audience Codes Widget */}
       <div className="glass-panel p-4 rounded-xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -274,21 +333,34 @@ export default function CredentialsView() {
                     </td>
 
                     <td className="py-3 px-4 text-center">
-                      <button
-                        onClick={() => handleCopy(
-                          c.role === 'AUDIENCE'
-                            ? `Voter ID: ${c.userId}${c.email ? ` | Email: ${c.email}` : ''}`
-                            : `${c.email || c.userId} / Password: ${c.accessCode}`,
-                          c.userId
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => handleCopy(
+                            c.role === 'AUDIENCE'
+                              ? `Voter ID: ${c.userId}${c.email ? ` | Email: ${c.email}` : ''}`
+                              : `${c.email || c.userId} / Password: ${c.accessCode}`,
+                            c.userId
+                          )}
+                          className="p-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg transition-all"
+                          title="Copy Login Details"
+                        >
+                          {copiedId === c.userId ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+                        </button>
+                        {(c.role === 'PARTICIPANT' || c.email) && (
+                          <button
+                            onClick={() => handleSendSingleCredential(c.userId)}
+                            disabled={sendingSingleId === c.userId}
+                            className="p-1.5 bg-indigo-950/60 hover:bg-indigo-900/80 border border-indigo-700/60 text-indigo-300 rounded-lg transition-all disabled:opacity-50"
+                            title="Send Credentials Email to this user"
+                          >
+                            <Mail className={`w-3.5 h-3.5 ${sendingSingleId === c.userId ? 'animate-spin text-amber-400' : 'text-indigo-400'}`} />
+                          </button>
                         )}
-                        className="p-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg transition-all"
-                        title="Copy Login Details"
-                      >
-                        {copiedId === c.userId ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
-                      </button>
+                      </div>
                     </td>
                   </tr>
                 ))
+
               )}
             </tbody>
           </table>

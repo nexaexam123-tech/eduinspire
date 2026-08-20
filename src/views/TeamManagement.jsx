@@ -1,11 +1,32 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Edit2, Trash2, Eye, Search, Layers, X, Key, GraduationCap, Building2, UploadCloud, FileSpreadsheet, Play, Download } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, Search, Layers, X, Key, GraduationCap, Building2, UploadCloud, FileSpreadsheet, Play, Download, Mail } from 'lucide-react';
 import * as xlsx from 'xlsx';
 
 export default function TeamManagement() {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [sendingAll, setSendingAll] = useState(false);
+  const [actionMessage, setActionMessage] = useState(null);
+
+  const handleSendAllCredentials = async () => {
+    if (!window.confirm('Are you sure you want to send User ID and Password emails to ALL participants?')) {
+      return;
+    }
+    setSendingAll(true);
+    setActionMessage(null);
+    try {
+      const res = await fetch('/api/credentials/send-all-participants', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send credentials.');
+      setActionMessage({ type: 'success', text: data.message });
+    } catch (err) {
+      setActionMessage({ type: 'error', text: err.message });
+    } finally {
+      setSendingAll(false);
+    }
+  };
+
 
   // Modals state
   const [showAddModal, setShowAddModal] = useState(false);
@@ -242,13 +263,33 @@ export default function TeamManagement() {
             Manage <strong className="text-slate-950 font-bold">{teams.length} participating colleges</strong> and faculty access credentials.
           </p>
         </div>
-        <button
-          onClick={handleOpenAdd}
-          className="btn-primary font-bold shadow-md"
-        >
-          <Plus className="w-4 h-4" /> Add New Team
-        </button>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            onClick={handleSendAllCredentials}
+            disabled={sendingAll}
+            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold rounded-xl flex items-center gap-1.5 transition-all shadow-md disabled:opacity-50"
+            title="Email User IDs & Passwords to all registered participants"
+          >
+            <Mail className={`w-4 h-4 ${sendingAll ? 'animate-spin' : ''}`} />
+            <span>{sendingAll ? 'Sending Emails...' : 'Send Passwords to All Participants'}</span>
+          </button>
+          <button
+            onClick={handleOpenAdd}
+            className="btn-primary font-bold shadow-md"
+          >
+            <Plus className="w-4 h-4" /> Add New Team
+          </button>
+        </div>
       </div>
+
+      {actionMessage && (
+        <div className={`p-4 rounded-xl text-sm font-bold border animate-fade-up shadow-sm ${
+          actionMessage.type === 'success' ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-rose-50 border-rose-300 text-rose-800'
+        }`}>
+          {actionMessage.text}
+        </div>
+      )}
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         

@@ -1067,6 +1067,163 @@ app.post('/api/evaluation/submit', async (req, res) => {
   }
 });
 
+// Helper to send login credentials (User ID & Password) to a participant via email
+async function sendParticipantCredentialsEmail(user) {
+  const targetEmail = user.email || (user.user_id && user.user_id.includes('@') ? user.user_id : null);
+  if (!targetEmail) {
+    return { success: false, reason: 'No registered email address found' };
+  }
+
+  const subject = '🔑 Your EduInspire Event Portal Credentials & Access Details';
+  
+  const textBody = `Hello Participant / Faculty Leader,\n\nHere are your official login credentials for the EduInspire Event Portal:\n\nLogin Credentials:\n- User ID / Email: ${user.user_id}\n- Password: ${user.access_code}\n${user.team_name ? `- Team Name: ${user.team_name}\n` : ''}${user.college_name ? `- College: ${user.college_name}\n` : ''}\nHow to Access:\n1. Go to the EduInspire Event Portal.\n2. Select "Participant / Faculty Login".\n3. Enter your User ID / Email and Password listed above.\n\nPlease keep these credentials confidential.\n\nBest regards,\nEduInspire Event Management Team`;
+
+  const htmlBody = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+      <div style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); padding: 24px; text-align: center; color: #ffffff;">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 0.5px;">EduInspire Event Portal</h2>
+        <p style="margin: 6px 0 0 0; font-size: 14px; opacity: 0.9;">Official Participant Credentials</p>
+      </div>
+      <div style="padding: 28px; color: #1e293b; line-height: 1.6;">
+        <p style="font-size: 16px; font-weight: 700; margin-top: 0; color: #0f172a;">Dear Participant / Faculty Leader,</p>
+        <p style="font-size: 14px; color: #334155;">
+          The Event Administrator has issued your login credentials to access the <strong>EduInspire Event Portal</strong>.
+        </p>
+
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #4f46e5; padding: 20px; margin: 20px 0; border-radius: 8px;">
+          <h4 style="margin: 0 0 14px 0; color: #334155; font-size: 13px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700;">🔑 Your Access Credentials</h4>
+          <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-weight: 600; width: 140px;">User ID / Email:</td>
+              <td style="padding: 6px 0; font-family: monospace; font-size: 15px; font-weight: 700; color: #4f46e5;">${user.user_id}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Password:</td>
+              <td style="padding: 6px 0;">
+                <span style="font-family: monospace; font-size: 16px; font-weight: 800; color: #0f172a; background-color: #e2e8f0; padding: 4px 10px; border-radius: 6px; letter-spacing: 1px;">${user.access_code}</span>
+              </td>
+            </tr>
+            ${user.team_name ? `
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Team Name:</td>
+              <td style="padding: 6px 0; color: #0f172a; font-weight: 600;">${user.team_name}</td>
+            </tr>` : ''}
+            ${user.college_name ? `
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-weight: 600;">College Name:</td>
+              <td style="padding: 6px 0; color: #0f172a; font-weight: 600;">${user.college_name}</td>
+            </tr>` : ''}
+          </table>
+        </div>
+
+        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 16px; border-radius: 8px; margin-top: 20px;">
+          <p style="margin: 0; color: #166534; font-size: 13px; font-weight: 700;">📌 How to Log In:</p>
+          <ol style="margin: 8px 0 0 0; padding-left: 20px; color: #166534; font-size: 13px; line-height: 1.5;">
+            <li>Go to the EduInspire Portal login page.</li>
+            <li>Click <strong>Participant / Faculty Login</strong>.</li>
+            <li>Enter your User ID / Email and Password listed above.</li>
+          </ol>
+        </div>
+
+        <p style="margin-top: 24px; font-size: 12px; color: #64748b;">
+          Please store your credentials securely and do not share them with unauthorized individuals.
+        </p>
+      </div>
+      <div style="background-color: #f1f5f9; padding: 16px; text-align: center; color: #64748b; font-size: 12px; border-top: 1px solid #e2e8f0;">
+        &copy; ${new Date().getFullYear()} EduInspire Event Control System. All rights reserved.
+      </div>
+    </div>
+  `;
+
+  try {
+    await sendEmail({
+      to: targetEmail,
+      subject,
+      text: textBody,
+      html: htmlBody
+    });
+    return { success: true, email: targetEmail };
+  } catch (err) {
+    console.error(`[SEND CREDENTIALS ERROR] Failed to send email to ${targetEmail}:`, err);
+    return { success: false, reason: err.message, email: targetEmail };
+  }
+}
+
+// Bulk send credentials email to all participants
+app.post('/api/credentials/send-all-participants', async (req, res) => {
+  try {
+    const [participants] = await db.query(`
+      SELECT u.*, t.team_name, t.college_name
+      FROM users u
+      LEFT JOIN teams t ON u.team_id = t.id
+      WHERE u.role = 'PARTICIPANT'
+    `);
+
+    if (participants.length === 0) {
+      return res.status(404).json({ error: 'No participant accounts found in the database.' });
+    }
+
+    let sentCount = 0;
+    let skippedCount = 0;
+    let failedCount = 0;
+
+    for (const p of participants) {
+      const targetEmail = p.email || (p.user_id && p.user_id.includes('@') ? p.user_id : null);
+      if (!targetEmail) {
+        skippedCount++;
+        continue;
+      }
+
+      const result = await sendParticipantCredentialsEmail(p);
+      if (result.success) {
+        sentCount++;
+      } else {
+        failedCount++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Credentials successfully sent to ${sentCount} participant(s)!${skippedCount > 0 ? ` (${skippedCount} skipped - no email)` : ''}${failedCount > 0 ? ` (${failedCount} failed)` : ''}`,
+      sentCount,
+      skippedCount,
+      failedCount,
+      total: participants.length
+    });
+  } catch (err) {
+    console.error('Error sending participant credentials:', err);
+    res.status(500).json({ error: 'Failed to send credentials: ' + err.message });
+  }
+});
+
+// Send credentials to a single user
+app.post('/api/credentials/send-single', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: 'User ID is required.' });
+
+    const [rows] = await db.query(`
+      SELECT u.*, t.team_name, t.college_name
+      FROM users u
+      LEFT JOIN teams t ON u.team_id = t.id
+      WHERE UPPER(u.user_id) = UPPER(?) OR (u.email IS NOT NULL AND LOWER(u.email) = LOWER(?))
+    `, [userId, userId]);
+
+    if (rows.length === 0) return res.status(404).json({ error: 'User not found.' });
+
+    const user = rows[0];
+    const result = await sendParticipantCredentialsEmail(user);
+    if (result.success) {
+      res.json({ success: true, message: `Credentials email successfully sent to ${result.email}!` });
+    } else {
+      res.status(400).json({ error: `Failed to send email: ${result.reason}` });
+    }
+  } catch (err) {
+    console.error('Single credential email error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ----------------------------------------------------
 // 6. CREDENTIAL MANAGEMENT ROUTES
 // ----------------------------------------------------
