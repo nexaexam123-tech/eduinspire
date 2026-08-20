@@ -147,9 +147,9 @@ export default function JudgePortal() {
         </div>
       </div>
 
-      <div className="surface-card p-4 flex flex-col md:flex-row gap-4">
+      <div className="surface-card p-6 flex flex-col md:flex-row gap-6 bg-[#E5E4E2] border-[#C9C9C9]">
         <div className="flex-1 space-y-2">
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-widest">Select Judge Identity</label>
+          <label className="block text-xs font-bold text-[#55585C] uppercase tracking-widest">Select Judge Identity</label>
           <div className="flex gap-2">
             {['Judge 1', 'Judge 2'].map(j => (
               <button
@@ -157,8 +157,8 @@ export default function JudgePortal() {
                 onClick={() => setSelectedJudge(j)}
                 className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all border ${
                   selectedJudge === j 
-                    ? 'bg-indigo-600 border-indigo-500 text-white shadow-[0_0_15px_rgba(79,70,229,0.3)]' 
-                    : 'bg-[#172033] border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
+                    ? 'bg-indigo-600 border-indigo-500 text-white shadow-[0_4px_15px_rgba(79,70,229,0.3)]' 
+                    : 'bg-white border-[#C9C9C9] text-[#111315] hover:border-indigo-400'
                 }`}
               >
                 {j}
@@ -168,10 +168,10 @@ export default function JudgePortal() {
         </div>
 
         <div className="flex-1 space-y-2">
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-widest">Select Team to Score</label>
+          <label className="block text-xs font-bold text-[#55585C] uppercase tracking-widest">Select Team to Score</label>
           <div className="relative">
             <select
-              className="form-input appearance-none"
+              className="form-input appearance-none bg-white border-[#C9C9C9] text-[#111315]"
               value={selectedTeamId}
               onChange={(e) => setSelectedTeamId(e.target.value)}
             >
@@ -193,33 +193,33 @@ export default function JudgePortal() {
       )}
 
       {selectedTeamId && currentTeamObj && (
-        <form onSubmit={handleSubmit} className="surface-card p-4 space-y-8 animate-fade-up">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800/60 pb-6 gap-4">
+        <form onSubmit={handleSubmit} className="surface-card p-6 md:p-8 space-y-8 animate-fade-up bg-white border-[#C9C9C9]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#C9C9C9] pb-6 gap-4">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="inline-block px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded text-[10px] font-bold tracking-wider">#{currentTeamObj.team_code}</span>
-                <span className="text-xl font-bold text-white leading-tight">{currentTeamObj.team_name}</span>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="inline-block px-3 py-1 bg-[#F1F0EE] border border-[#C9C9C9] text-[#111315] rounded-lg text-[10px] font-bold tracking-widest">#{currentTeamObj.team_code}</span>
+                <span className="text-2xl font-extrabold text-[#111315] leading-tight">{currentTeamObj.team_name}</span>
               </div>
-              <div className="text-sm text-slate-400">{currentTeamObj.college_name}</div>
+              <div className="text-sm font-medium text-[#55585C]">{currentTeamObj.college_name}</div>
             </div>
             
-            <div className="bg-[#172033] border border-slate-700 p-3 rounded-xl flex items-center gap-4">
+            <div className="bg-[#E5E4E2] border border-[#C9C9C9] p-4 rounded-xl flex items-center gap-5 shadow-sm">
               <div className="text-right">
-                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Total Score</div>
-                <div className="text-3xl font-black font-mono text-indigo-400">{totalScore}</div>
+                <div className="text-[10px] text-[#55585C] font-bold uppercase tracking-widest">Total Score</div>
+                <div className="text-4xl font-black font-mono text-indigo-700">{totalScore}</div>
               </div>
-              <div className="w-12 h-12 bg-indigo-500/20 rounded-full flex items-center justify-center">
-                <Award className="w-6 h-6 text-indigo-400" />
+              <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                <Award className="w-7 h-7 text-indigo-500" />
               </div>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest border-l-4 border-indigo-500 pl-3">
+            <h3 className="text-sm font-bold text-[#111315] uppercase tracking-widest border-l-4 border-[#111315] pl-3">
               Evaluation Criteria
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8 mt-6">
               {criteriaList.map((crit) => (
                 <SliderScore
                   key={crit.key}
@@ -234,7 +234,7 @@ export default function JudgePortal() {
             </div>
           </div>
 
-          <div className="pt-6 border-t border-slate-800/60 flex justify-end">
+          <div className="pt-8 mt-4 border-t border-[#C9C9C9] flex justify-end">
             <button
               type="submit"
               disabled={submitting}

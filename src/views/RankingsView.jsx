@@ -138,7 +138,7 @@ export default function RankingsView({ user }) {
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="flex flex-col items-center gap-4">
           <div className="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-400 text-sm font-medium">Compiling Results...</p>
+          <p className="text-[#55585C] text-sm font-bold tracking-widest uppercase">Compiling Results...</p>
         </div>
       </div>
     );
@@ -150,38 +150,38 @@ export default function RankingsView({ user }) {
   const isAdmin = user?.role === 'ADMIN';
 
   const getRowColor = (rank, isTied) => {
-    if (isTied) return 'bg-amber-500/5 hover:bg-amber-500/10';
-    if (activeTab === 'AUDIENCE' && rank === 1) return 'bg-amber-500/10 hover:bg-amber-500/20';
+    if (isTied) return 'bg-amber-50 hover:bg-amber-100/50';
+    if (activeTab === 'AUDIENCE' && rank === 1) return 'bg-amber-50 hover:bg-amber-100/50';
     if (activeTab === 'JUDGE') {
-      if (rank === 1) return 'bg-amber-500/10 hover:bg-amber-500/20';
-      if (rank === 2) return 'bg-slate-400/10 hover:bg-slate-400/20';
-      if (rank === 3) return 'bg-orange-700/10 hover:bg-orange-700/20';
-      if (rank === 4) return 'bg-indigo-500/10 hover:bg-indigo-500/20';
-      if (rank === 5) return 'bg-emerald-500/10 hover:bg-emerald-500/20';
+      if (rank === 1) return 'bg-amber-50 hover:bg-amber-100/50';
+      if (rank === 2) return 'bg-[#F1F0EE] hover:bg-[#E5E4E2]';
+      if (rank === 3) return 'bg-orange-50 hover:bg-orange-100/50';
+      if (rank === 4) return 'bg-indigo-50 hover:bg-indigo-100/50';
+      if (rank === 5) return 'bg-emerald-50 hover:bg-emerald-100/50';
     }
-    return 'hover:bg-slate-800/30';
+    return 'hover:bg-[#F1F0EE]';
   };
 
   const getBadgeColor = (rank) => {
-    if (rank === 1) return 'bg-amber-500/20 text-amber-400 border-amber-500/50';
-    if (rank === 2) return 'bg-slate-400/20 text-slate-300 border-slate-400/50';
-    if (rank === 3) return 'bg-orange-700/20 text-orange-500 border-orange-700/50';
-    if (rank === 4) return 'bg-indigo-500/20 text-indigo-400 border-indigo-500/50';
-    if (rank === 5) return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50';
-    return 'bg-slate-800 text-slate-400 border-slate-700';
+    if (rank === 1) return 'bg-amber-100 text-amber-700 border-amber-300';
+    if (rank === 2) return 'bg-slate-200 text-slate-700 border-slate-300';
+    if (rank === 3) return 'bg-orange-100 text-orange-700 border-orange-300';
+    if (rank === 4) return 'bg-indigo-100 text-indigo-700 border-indigo-300';
+    if (rank === 5) return 'bg-emerald-100 text-emerald-700 border-emerald-300';
+    return 'bg-[#E5E4E2] text-[#55585C] border-[#C9C9C9]';
   };
 
   const getScoreColor = (rank) => {
     if (activeTab === 'JUDGE' && rank <= 5) {
-      if (rank === 1) return 'text-amber-400';
-      if (rank === 2) return 'text-slate-300';
-      if (rank === 3) return 'text-orange-500';
-      if (rank === 4) return 'text-indigo-400';
-      if (rank === 5) return 'text-emerald-400';
+      if (rank === 1) return 'text-amber-600';
+      if (rank === 2) return 'text-slate-600';
+      if (rank === 3) return 'text-orange-600';
+      if (rank === 4) return 'text-indigo-600';
+      if (rank === 5) return 'text-emerald-600';
     } else if (activeTab === 'AUDIENCE' && rank === 1) {
-      return 'text-amber-400';
+      return 'text-amber-600';
     }
-    return 'text-slate-300';
+    return 'text-[#111315]';
   };
 
   const unevaluatedJudgeTeams = judgeList.filter(t => t.avgScore === 0).length;
@@ -204,11 +204,11 @@ export default function RankingsView({ user }) {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Trophy className="w-6 h-6 text-amber-400" />
+          <h2 className="text-3xl font-extrabold text-white flex items-center gap-3">
+            <Trophy className="w-8 h-8 text-amber-400" />
             <span>Leaderboard</span>
           </h2>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-[#E5E4E2] text-sm mt-1 font-medium">
             Top 5 Cash Prizes and Audience Choice Shield results.
           </p>
         </div>
@@ -249,46 +249,46 @@ export default function RankingsView({ user }) {
       )}
 
       {message && (
-        <div className={`p-4 rounded-xl text-sm font-medium border animate-fade-up ${
-          message.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' :
-          message.type === 'error' ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
-          'bg-indigo-500/10 border-indigo-500/30 text-indigo-400'
+        <div className={`p-4 rounded-xl text-sm font-bold border animate-fade-up shadow-sm ${
+          message.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+          message.type === 'error' ? 'bg-rose-50 border-rose-200 text-rose-700' :
+          'bg-indigo-50 border-indigo-200 text-indigo-700'
         }`}>
           {message.text}
         </div>
       )}
 
-      <div className="surface-card flex flex-col min-h-[50vh] overflow-hidden">
+      <div className="surface-card flex flex-col min-h-[50vh] overflow-hidden bg-white border border-[#C9C9C9]">
         {/* Tabs & Toolbar */}
-        <div className="border-b border-slate-800/60 bg-[#172033]/50 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+        <div className="border-b border-[#C9C9C9] bg-[#F1F0EE] flex flex-col sm:flex-row justify-between items-start sm:items-center">
           <div className="flex px-4 pt-4 overflow-x-auto w-full sm:w-auto">
             <button
               onClick={() => { setActiveTab('JUDGE'); setMessage(null); }}
-              className={`flex items-center gap-2 pb-3 border-b-2 font-semibold text-sm transition-colors whitespace-nowrap mr-6 ${
-                activeTab === 'JUDGE' ? 'border-amber-400 text-amber-400' : 'border-transparent text-slate-500 hover:text-slate-300'
+              className={`flex items-center gap-2 pb-3 border-b-2 font-extrabold text-sm transition-colors whitespace-nowrap mr-6 ${
+                activeTab === 'JUDGE' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-[#55585C] hover:text-[#111315]'
               }`}
             >
               <DollarSign className="w-4 h-4" /> Judge Rankings
             </button>
             <button
               onClick={() => { setActiveTab('AUDIENCE'); setMessage(null); }}
-              className={`flex items-center gap-2 pb-3 border-b-2 font-semibold text-sm transition-colors whitespace-nowrap ${
-                activeTab === 'AUDIENCE' ? 'border-amber-400 text-amber-400' : 'border-transparent text-slate-500 hover:text-slate-300'
+              className={`flex items-center gap-2 pb-3 border-b-2 font-extrabold text-sm transition-colors whitespace-nowrap ${
+                activeTab === 'AUDIENCE' ? 'border-amber-500 text-amber-600' : 'border-transparent text-[#55585C] hover:text-[#111315]'
               }`}
             >
               <Shield className="w-4 h-4" /> Audience Choice
             </button>
           </div>
           
-          <div className="p-3 sm:p-0 sm:pr-4 sm:pb-1 border-t border-slate-800/60 sm:border-0 w-full sm:w-auto flex flex-col sm:flex-row items-center gap-3 justify-end">
+          <div className="p-3 sm:p-0 sm:pr-4 sm:pb-1 border-t border-[#C9C9C9] sm:border-0 w-full sm:w-auto flex flex-col sm:flex-row items-center gap-3 justify-end">
             <div className="relative w-full sm:w-auto">
-              <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2" />
+              <Search className="w-4 h-4 text-[#55585C] absolute left-3 top-2.5" />
               <input 
                 type="text" 
                 placeholder="Search team or college..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-amber-500 w-full sm:w-64"
+                className="pl-9 pr-3 py-2 bg-white border border-[#C9C9C9] rounded-lg text-sm text-[#111315] font-semibold focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-full sm:w-64"
               />
             </div>
             {isAdmin && (
@@ -306,19 +306,19 @@ export default function RankingsView({ user }) {
         {/* Leaderboard Table */}
         <div className="flex-1 overflow-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-[#172033] text-slate-400 text-xs uppercase tracking-wider sticky top-0 z-10">
+            <thead className="bg-[#E5E4E2] text-[#55585C] text-xs font-bold uppercase tracking-wider sticky top-0 z-10 shadow-sm border-b border-[#C9C9C9]">
               <tr>
-                <th className="py-1.5 px-3 text-center font-medium">Rank</th>
-                <th className="py-1.5 px-3 font-medium">Team Details</th>
-                <th className="py-1.5 px-3 text-center font-medium">{activeTab === 'JUDGE' ? 'Avg Score' : 'Score'}</th>
-                <th className="py-1.5 px-3 text-center font-medium">Award</th>
-                {isAdmin && <th className="py-1.5 px-3 text-center font-medium">Reorder</th>}
+                <th className="py-2.5 px-3 text-center">Rank</th>
+                <th className="py-2.5 px-3">Team Details</th>
+                <th className="py-2.5 px-3 text-center">{activeTab === 'JUDGE' ? 'Avg Score' : 'Score'}</th>
+                <th className="py-2.5 px-3 text-center">Award</th>
+                {isAdmin && <th className="py-2.5 px-3 text-center">Reorder</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/50">
+            <tbody className="divide-y divide-[#C9C9C9]">
               {filteredList.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="py-6 text-center text-slate-500">
+                  <td colSpan="5" className="py-6 text-center text-[#55585C] font-semibold bg-[#F1F0EE]">
                     No teams match your search or no ranking data available.
                   </td>
                 </tr>
@@ -333,61 +333,61 @@ export default function RankingsView({ user }) {
                       key={team.teamId}
                       className={`transition-colors ${getRowColor(rankNum, isTied)}`}
                     >
-                      <td className="py-1.5 px-3 text-center">
-                        <span className={`w-8 h-8 rounded-full inline-flex items-center justify-center font-extrabold text-sm font-mono shadow ${
+                      <td className="py-2.5 px-3 text-center">
+                        <span className={`w-8 h-8 rounded-full inline-flex items-center justify-center font-extrabold text-sm font-mono shadow-sm ${
                           rankNum === 1 ? 'bg-amber-400 text-amber-950 ring-2 ring-amber-400/50 shadow-amber-400/30' :
-                          rankNum === 2 ? 'bg-slate-300 text-slate-900' :
+                          rankNum === 2 ? 'bg-slate-300 text-slate-800' :
                           rankNum === 3 ? 'bg-orange-600 text-white' :
                           rankNum === 4 && activeTab === 'JUDGE' ? 'bg-indigo-600 text-white' : 
                           rankNum === 5 && activeTab === 'JUDGE' ? 'bg-emerald-600 text-white' : 
-                          'bg-slate-800 text-slate-400'
+                          'bg-[#E5E4E2] text-[#55585C]'
                         }`}>
                           {rankNum}
                         </span>
                       </td>
 
-                      <td className="py-1.5 px-3">
+                      <td className="py-2.5 px-3">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-xs text-slate-500 font-bold">#{team.teamCode}</span>
-                          <span className="font-bold text-white text-base">{team.teamName}</span>
+                          <span className="font-mono text-[10px] text-[#55585C] font-bold px-1.5 py-0.5 bg-[#E5E4E2] rounded">#{team.teamCode}</span>
+                          <span className="font-bold text-[#111315] text-base">{team.teamName}</span>
                           {isTied && rankNum <= 5 && (
-                            <span className="px-1.5 py-0.5 bg-amber-500 text-[#0B1120] font-bold text-[10px] rounded animate-pulse-subtle">
+                            <span className="px-1.5 py-0.5 bg-amber-200 text-amber-900 font-bold text-[10px] rounded animate-pulse-subtle border border-amber-300">
                               TIE
                             </span>
                           )}
                         </div>
-                        <div className="text-xs text-slate-400">{team.collegeName} &bull; {team.deptName}</div>
+                        <div className="text-xs text-[#55585C] font-medium">{team.collegeName} &bull; {team.deptName}</div>
                       </td>
 
-                      <td className="py-1.5 px-3 text-center font-mono">
+                      <td className="py-2.5 px-3 text-center font-mono">
                         {editingScoreTeamId === team.teamId ? (
                           <div className="flex items-center justify-center gap-2">
                             <input
                               type="number"
-                              className="w-16 px-2 py-1 text-sm bg-slate-900 border border-amber-500 rounded text-white text-center focus:outline-none"
+                              className="w-16 px-2 py-1 text-sm bg-white border border-indigo-400 rounded text-[#111315] text-center font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
                               value={newScoreValue}
                               onChange={(e) => setNewScoreValue(e.target.value)}
                               autoFocus
                             />
-                            <button onClick={() => handleSaveScore(team.teamId)} className="p-1 bg-emerald-600 rounded text-white hover:bg-emerald-500">
+                            <button onClick={() => handleSaveScore(team.teamId)} className="p-1 bg-emerald-600 rounded text-white hover:bg-emerald-500 shadow-sm">
                               <Save className="w-4 h-4" />
                             </button>
-                            <button onClick={() => setEditingScoreTeamId(null)} className="p-1 bg-slate-800 rounded text-slate-400 hover:text-slate-200">
+                            <button onClick={() => setEditingScoreTeamId(null)} className="p-1 bg-[#E5E4E2] rounded text-[#55585C] hover:text-[#111315]">
                               <X className="w-4 h-4" />
                             </button>
                           </div>
                         ) : (
                           <div className="flex items-center justify-center gap-2 group">
-                            <span className={`text-base font-bold ${getScoreColor(rankNum)} ${team.isManualScore ? 'border-b border-dashed' : ''}`}>
+                            <span className={`text-lg font-black ${getScoreColor(rankNum)} ${team.isManualScore ? 'border-b border-dashed' : ''}`}>
                               {team.avgScore}
                             </span>
                             {isTied && rankNum > 5 && (
-                              <AlertTriangle className="w-3.5 h-3.5 text-amber-600/60" title="Tied Score" />
+                              <AlertTriangle className="w-4 h-4 text-amber-500" title="Tied Score" />
                             )}
                             {isAdmin && (
                               <button
                                 onClick={() => { setEditingScoreTeamId(team.teamId); setNewScoreValue(team.avgScore.toString()); }}
-                                className="p-1.5 text-slate-400 hover:text-amber-400 hover:bg-amber-400/10 rounded-md transition-all ml-1"
+                                className="p-1.5 text-[#55585C] hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-all ml-1"
                                 title="Override Score"
                               >
                                 <Edit2 className="w-4 h-4" />
@@ -397,36 +397,36 @@ export default function RankingsView({ user }) {
                         )}
                       </td>
 
-                      <td className="py-1.5 px-3 text-center">
+                      <td className="py-2.5 px-3 text-center">
                         {activeTab === 'JUDGE' && rankNum <= 5 ? (
                           <span className={`px-2.5 py-1 text-[10px] font-extrabold rounded-full inline-flex items-center gap-1 border ${getBadgeColor(rankNum)}`}>
                             <DollarSign className="w-3.5 h-3.5" />
                             CASH PRIZE #{rankNum}
                           </span>
                         ) : activeTab === 'AUDIENCE' && rankNum === 1 ? (
-                          <span className="px-3 py-1 bg-amber-400 text-amber-950 font-black text-[10px] rounded-full inline-flex items-center gap-1 shadow-[0_0_15px_rgba(251,191,36,0.3)]">
+                          <span className="px-3 py-1 bg-amber-400 text-amber-950 font-black text-[10px] rounded-full inline-flex items-center gap-1 shadow-[0_0_15px_rgba(251,191,36,0.3)] border border-amber-500">
                             <Shield className="w-3.5 h-3.5" />
                             SHIELD WINNER
                           </span>
                         ) : (
-                          <span className="text-slate-600 font-bold">&mdash;</span>
+                          <span className="text-[#C9C9C9] font-bold">&mdash;</span>
                         )}
                       </td>
 
                       {isAdmin && (
-                        <td className="py-1.5 px-3 text-center">
+                        <td className="py-2.5 px-3 text-center">
                           <div className="inline-flex items-center gap-1">
                             <button
                               onClick={() => moveRank(currentList, idx, 'UP')}
                               disabled={idx === 0}
-                              className="p-1.5 text-slate-500 hover:text-white hover:bg-slate-800 rounded transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500"
+                              className="p-1.5 text-[#55585C] hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[#55585C]"
                             >
                               <ArrowUp className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => moveRank(currentList, idx, 'DOWN')}
                               disabled={idx === currentList.length - 1}
-                              className="p-1.5 text-slate-500 hover:text-white hover:bg-slate-800 rounded transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500"
+                              className="p-1.5 text-[#55585C] hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[#55585C]"
                             >
                               <ArrowDown className="w-4 h-4" />
                             </button>

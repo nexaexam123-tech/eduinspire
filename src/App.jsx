@@ -85,7 +85,7 @@ export default function App() {
 
   if (isAdmin) {
     return (
-      <div className="min-h-screen bg-[#0B1120] text-slate-100 flex font-sans">
+      <div className="min-h-screen text-slate-100 flex font-sans">
         <Sidebar currentView={currentView} setCurrentView={setCurrentView} onLogout={handleLogout} />
         <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
           <Header user={user} eventState={eventState} onLogout={handleLogout} />
@@ -101,7 +101,7 @@ export default function App() {
 
   // Judge, Participant, Audience Layout
   return (
-    <div className="min-h-screen bg-[#0B1120] text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen text-slate-100 flex flex-col font-sans">
       {!isVoter && (
         <Header user={user} currentView={currentView} setCurrentView={setCurrentView} eventState={eventState} onLogout={handleLogout} />
       )}

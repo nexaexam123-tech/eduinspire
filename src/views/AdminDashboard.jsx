@@ -6,12 +6,12 @@ import {
 
 function KPICard({ title, value, icon: Icon, colorClass }) {
   return (
-    <div className="surface-card p-5 flex items-center justify-between group hover:border-indigo-500/20 transition-all">
+    <div className="p-5 rounded-2xl flex items-center justify-between group bg-[#E5E4E2] border border-[#C9C9C9] transition-all duration-300 hover:-translate-y-1 shadow-md hover:shadow-lg">
       <div>
-        <p className="text-[13px] font-medium text-slate-400 mb-1">{title}</p>
-        <h3 className="text-2xl font-bold text-white">{value}</h3>
+        <p className="text-[11px] font-bold text-[#55585C] mb-1 uppercase tracking-wider">{title}</p>
+        <h3 className="text-3xl font-extrabold text-[#111315] tracking-tight">{value}</h3>
       </div>
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-slate-800/50 ${colorClass} group-hover:bg-slate-800 transition-colors`}>
+      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-white shadow-sm ${colorClass} transition-colors`}>
         <Icon className="w-6 h-6" />
       </div>
     </div>
@@ -231,18 +231,18 @@ export default function AdminDashboard({ onNavigate }) {
       </div>
 
       {/* Live Stage & Voting Control Panel */}
-      <div className="surface-card overflow-hidden">
-        <div className="p-5 border-b border-slate-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#172033]/40">
+      <div className="surface-card overflow-hidden border border-[#C9C9C9] bg-[#F1F0EE]">
+        <div className="p-5 border-b border-[#C9C9C9] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white">
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-bold text-white">Live Presentation & Voting Stage</h3>
+              <h3 className="text-lg font-bold text-[#111315]">Live Presentation & Voting Stage</h3>
               {activeTeam && (
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-indigo-100 text-indigo-700 border border-indigo-200">
                   Team #{activeTeam.presentation_order} ({activeTeam.team_code})
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-400 mt-1">Select a team number below to assign the stage and control real-time voting.</p>
+            <p className="text-xs text-[#55585C] mt-1">Select a team number below to assign the stage and control real-time voting.</p>
           </div>
           <div className={`px-3 py-1.5 rounded-full text-xs font-bold tracking-wide border self-start sm:self-auto flex items-center gap-1.5 ${
             isVotingOpen ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
@@ -252,26 +252,24 @@ export default function AdminDashboard({ onNavigate }) {
           </div>
         </div>
 
-        {/* Active Team Highlight Banner */}
+        {/* Active Team Presenting Panel */}
         {activeTeam ? (
-          <div className="p-5 border-b border-slate-800/40 bg-gradient-to-r from-indigo-950/40 via-slate-900/30 to-slate-900/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="space-y-1 max-w-2xl">
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 bg-indigo-600 text-white font-mono font-bold text-xs rounded">
-                  #{activeTeam.presentation_order}
-                </span>
-                <span className="font-mono text-xs text-indigo-400 font-bold">{activeTeam.team_code}</span>
-                <span className="text-xs text-slate-400">&bull;</span>
-                <span className="text-xs text-slate-300 flex items-center gap-1 font-medium">
-                  <Building2 className="w-3.5 h-3.5 text-indigo-400" /> {activeTeam.college_name}
-                </span>
+          <div className="p-5 border-b border-[#C9C9C9] bg-[#E5E4E2] flex flex-col md:flex-row items-center gap-6">
+            <div className="w-20 h-20 bg-indigo-50 border border-indigo-100 rounded-full flex items-center justify-center shrink-0 shadow-sm relative">
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-indigo-500 text-white text-[10px] font-bold rounded-full border-2 border-white flex items-center justify-center">
+                #{activeTeam.presentation_order}
+              </span>
+              <Building2 className="w-10 h-10 text-indigo-500" />
+            </div>
+            <div className="flex-1 text-center md:text-left space-y-1">
+              <div className="inline-block px-3 py-1 bg-white border border-[#C9C9C9] rounded-lg text-[10px] font-bold text-[#55585C] uppercase tracking-widest mb-1 shadow-sm">
+                Active Presentation
               </div>
-              <h4 className="text-base sm:text-lg font-bold text-white leading-snug">
-                {activeTeam.team_name}
-              </h4>
-              <p className="text-xs text-slate-400 flex items-center gap-1">
-                <GraduationCap className="w-3.5 h-3.5 text-slate-500" /> {activeTeam.dept_name}
-              </p>
+              <h2 className="text-3xl font-extrabold text-[#111315] tracking-tight">{activeTeam.team_name}</h2>
+              <p className="text-sm text-[#55585C] font-medium">{activeTeam.college_name}</p>
+              {activeTeam.project_title && (
+                <p className="text-sm font-bold text-indigo-600 mt-2">{activeTeam.project_title}</p>
+              )}
             </div>
 
             {/* Quick Action Button for Selected Team */}
@@ -310,19 +308,19 @@ export default function AdminDashboard({ onNavigate }) {
             </div>
           </div>
         ) : (
-          <div className="p-5 border-b border-slate-800/40 text-center text-slate-500 text-sm">
+          <div className="p-5 border-b border-[#C9C9C9] text-center text-[#55585C] text-sm bg-white">
             No team currently selected. Click a team number below to assign the stage.
           </div>
         )}
         
         {/* Timer Control Bars */}
-        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-800/60 bg-slate-900/20">
+        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-[#C9C9C9] bg-white">
           
           {/* Presentation Timer */}
           <div className="p-5 flex flex-col xl:flex-row gap-6 items-start xl:items-center justify-between">
             <div className="space-y-1">
-              <h4 className="text-xs font-semibold text-rose-500 uppercase tracking-wider">Presentation Timer</h4>
-              <div className="text-4xl font-mono font-bold tracking-tight text-white">
+              <h4 className="text-xs font-semibold text-rose-600 uppercase tracking-wider">Presentation Timer</h4>
+              <div className="text-4xl font-mono font-bold tracking-tight text-[#111315]">
                 {formatTime(eventState?.timer_remaining)}
               </div>
               
@@ -385,8 +383,8 @@ export default function AdminDashboard({ onNavigate }) {
           {/* Voting Timer */}
           <div className="p-5 flex flex-col xl:flex-row gap-6 items-start xl:items-center justify-between">
             <div className="space-y-1">
-              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Voting Timer</h4>
-              <div className="text-4xl font-mono font-bold tracking-tight text-white">
+              <h4 className="text-xs font-semibold text-[#55585C] uppercase tracking-wider">Voting Timer</h4>
+              <div className="text-4xl font-mono font-bold tracking-tight text-[#111315]">
                 {isVotingOpen ? formatTime(displaySeconds) : '--:--'}
               </div>
               
@@ -454,13 +452,13 @@ export default function AdminDashboard({ onNavigate }) {
         </div>
 
         {/* Interactive Team Number Grid */}
-        <div className="p-5 border-t border-slate-800/60">
+        <div className="p-5 border-t border-[#C9C9C9] bg-[#E5E4E2]">
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-bold text-white flex items-center gap-2">
-              <Layers className="w-4 h-4 text-indigo-400" />
+            <h4 className="text-sm font-bold text-[#111315] flex items-center gap-2">
+              <Layers className="w-4 h-4 text-indigo-600" />
               <span>Click Any Team Number to Select & Start Vote</span>
             </h4>
-            <span className="text-xs text-slate-400">{teams.length} Teams Registered</span>
+            <span className="text-xs text-[#55585C] font-bold">{teams.length} Teams Registered</span>
           </div>
 
           {/* Quick Team Number Badges */}
@@ -475,7 +473,7 @@ export default function AdminDashboard({ onNavigate }) {
                   className={`p-2 rounded-xl text-center font-mono text-xs font-bold transition-all relative group ${
                     isSelected
                       ? 'bg-indigo-600 text-white ring-2 ring-indigo-400 shadow-lg shadow-indigo-900/40 scale-105'
-                      : 'bg-slate-900/80 border border-slate-800 text-slate-300 hover:border-indigo-500/50 hover:bg-slate-800 hover:text-white'
+                      : 'bg-white border border-[#C9C9C9] text-[#111315] hover:border-indigo-400 hover:bg-indigo-50 shadow-sm'
                   }`}
                 >
                   <div className="text-[10px] text-slate-400 font-normal group-hover:text-slate-200">

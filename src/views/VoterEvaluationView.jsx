@@ -12,8 +12,22 @@ export default function VoterEvaluationView({ user, onLogout }) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   
   // State for all team scores: { [teamId]: number }
-  const [scores, setScores] = useState({});
-  const [categoryScores, setCategoryScores] = useState({});
+  const [scores, setScores] = useState(() => {
+    const saved = localStorage.getItem(`eduinspire_scores_${user.userId}`);
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [categoryScores, setCategoryScores] = useState(() => {
+    const saved = localStorage.getItem(`eduinspire_categoryScores_${user.userId}`);
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  useEffect(() => {
+    localStorage.setItem(`eduinspire_scores_${user.userId}`, JSON.stringify(scores));
+  }, [scores, user.userId]);
+
+  useEffect(() => {
+    localStorage.setItem(`eduinspire_categoryScores_${user.userId}`, JSON.stringify(categoryScores));
+  }, [categoryScores, user.userId]);
 
   const fetchData = async () => {
     try {
@@ -248,81 +262,132 @@ export default function VoterEvaluationView({ user, onLogout }) {
             </div>
           )}
 
-          <form onSubmit={attemptSubmit} className="space-y-4">
-            {teams.map((team, index) => {
+          <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+            {(() => {
+              const currentTeamId = state?.current_team_id;
+              const currentTeam = currentTeamId ? teams.find(t => t.id === currentTeamId) : null;
+              
+              if (!currentTeam) {
+                return (
+                  <div className="surface-card p-10 text-center space-y-4 border border-dashed border-slate-700/50 animate-fade-up">
+                    <div className="w-16 h-16 bg-[#111315] rounded-full flex items-center justify-center mx-auto text-[#55585C]">
+                      <Eye className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-xl font-bold text-[#111315]">Waiting for Next Team</h3>
+                    <p className="text-sm text-[#55585C]">The Administrator has not yet started a presentation. Please wait for the next team to appear here.</p>
+                  </div>
+                );
+              }
+
+              const team = currentTeam;
+              const index = teams.findIndex(t => t.id === team.id);
               const ownTeam = isOwnTeam(team.id);
               const hasScore = scores[team.id] !== undefined && scores[team.id] !== '';
 
               if (ownTeam) {
                 return (
-                  <div key={team.id} className="surface-card p-5 border-dashed border-slate-700/50 opacity-70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div key={team.id} className="surface-card p-6 border-dashed border-slate-700/50 flex flex-col items-center text-center gap-4 animate-fade-up">
+                    <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center text-rose-500 mb-2">
+                      <AlertCircle className="w-8 h-8" />
+                    </div>
                     <div>
-                      <span className="inline-block px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded text-[10px] font-bold tracking-wider mb-2">YOUR TEAM</span>
-                      <div className="font-bold text-white text-base">{team.team_name}</div>
-                      <div className="text-xs text-slate-400 mt-1">{team.college_name}</div>
+                      <span className="inline-block px-3 py-1 bg-rose-500/10 text-rose-500 rounded text-[11px] font-bold tracking-wider mb-3">YOUR TEAM - NOT ELIGIBLE</span>
+                      <div className="font-bold text-[#111315] text-xl">{team.team_name}</div>
+                      <div className="text-sm text-[#55585C] mt-1">{team.college_name}</div>
                     </div>
-                    <div className="text-xs font-semibold text-slate-500 text-left sm:text-right">
-                      You cannot vote for your own team.
-                    </div>
+                    <p className="text-sm text-[#55585C] mt-2 max-w-sm">
+                      You are not allowed to evaluate your own team. Please wait for the next presentation.
+                    </p>
                   </div>
                 );
               }
 
-              const currentScore = scores[team.id] !== undefined && scores[team.id] !== '' ? scores[team.id] : 0;
+              const currentScore = hasScore ? scores[team.id] : 0;
+              const isLocked = !!localStorage.getItem(`eduinspire_locked_${user.userId}_${team.id}`);
 
               return (
-                <div key={team.id} className={`surface-card p-4 sm:p-5 transition-all duration-300 ${hasScore ? 'border-indigo-500/30 bg-indigo-500/5' : ''}`}>
-                  <div className="flex flex-col gap-4">
-                    <div className="flex justify-between items-start gap-4">
+                <div key={team.id} className="surface-card p-4 sm:p-6 transition-all duration-300 animate-fade-up border border-[#C9C9C9]">
+                  <div className="flex flex-col gap-5">
+                    
+                    {/* Team Header */}
+                    <div className="flex justify-between items-start gap-4 pb-5 border-b border-[#C9C9C9]">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-mono font-bold text-slate-500">#{index + 1}</span>
-                          <span className="text-sm font-bold text-white leading-tight">{team.team_name}</span>
-                          {hasScore && <Check className="w-4 h-4 text-emerald-500" />}
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#111315]/5 text-[#55585C]">Team #{team.presentation_order || index + 1}</span>
+                          <span className="text-lg font-bold text-[#111315] leading-tight">{team.team_name}</span>
+                          {isLocked && <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> LOCKED</span>}
                         </div>
-                        <div className="text-xs text-slate-400">{team.college_name}</div>
+                        <div className="text-sm text-[#55585C] flex flex-wrap gap-x-4 gap-y-1">
+                          <span>{team.college_name}</span>
+                          {team.department && <span>&bull; {team.department}</span>}
+                        </div>
+                        {team.project_title && (
+                          <div className="text-sm font-medium text-[#111315] mt-2">{team.project_title}</div>
+                        )}
                       </div>
                       <div className="flex flex-col items-end shrink-0">
-                        <div className={`px-3 py-1.5 border rounded-lg font-mono font-bold text-lg shadow-inner transition-colors ${
-                          hasScore ? 'bg-indigo-900/30 border-indigo-500/40 text-indigo-400' : 'bg-[#172033] border-slate-700 text-slate-400'
+                        <div className={`px-4 py-2 border rounded-xl font-mono font-bold text-2xl shadow-sm transition-colors ${
+                          hasScore ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-[#C9C9C9] text-[#55585C]'
                         }`}>
-                          {hasScore ? currentScore : '--'} <span className="text-slate-500 font-normal text-xs">/ 100</span>
+                          {hasScore ? currentScore : '--'} <span className="text-[#55585C] font-normal text-sm">/ 100</span>
                         </div>
+                        <div className="text-[10px] font-bold text-[#55585C] mt-1.5 uppercase tracking-wider">Total Score</div>
                       </div>
                     </div>
 
-                    <div className="space-y-4 pt-4 border-t border-slate-700/50 mt-4">
-                      <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest border-l-4 border-indigo-500 pl-3">
-                        Evaluation Criteria
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8 mt-4">
-                      {getCriteriaList().map(crit => {
-                        const catVal = categoryScores[team.id]?.[crit.key];
-                        return (
-                          <SliderScore
-                            key={crit.key}
-                            categoryKey={crit.key}
-                            title={crit.title}
-                            max={crit.max}
-                            description={crit.description}
-                            value={catVal !== undefined ? catVal : ''}
-                            onChange={(catKey, val) => handleCategoryChange(team.id, catKey, crit.max, val)}
-                          />
-                        );
-                      })}
-                    </div>
-                    </div>
-                    <div className="flex justify-between items-center pt-5 border-t border-slate-700/50 mt-6">
-                      <span className="text-sm font-bold text-white">TOTAL SCORE:</span>
-                      <div className="flex items-center gap-2">
-                          <span className="text-lg font-mono font-bold text-indigo-400">{currentScore}</span>
-                          <span className="text-xs text-slate-500 font-mono w-8">/ 100</span>
+                    {isLocked ? (
+                      <div className="py-12 text-center flex flex-col items-center justify-center">
+                        <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500 mb-4 shadow-sm">
+                          <Check className="w-8 h-8" />
+                        </div>
+                        <h4 className="text-lg font-bold text-[#111315] mb-2">Evaluation Submitted</h4>
+                        <p className="text-sm text-[#55585C]">Your evaluation has been recorded locally.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4 pt-2">
+                        <h3 className="text-sm font-bold text-[#111315] uppercase tracking-widest border-l-4 border-[#111315] pl-3">
+                          Evaluation Criteria
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8 mt-6">
+                        {getCriteriaList().map(crit => {
+                          const catVal = categoryScores[team.id]?.[crit.key];
+                          return (
+                            <SliderScore
+                              key={crit.key}
+                              categoryKey={crit.key}
+                              title={crit.title}
+                              max={crit.max}
+                              description={crit.description}
+                              value={catVal !== undefined ? catVal : ''}
+                              onChange={(catKey, val) => handleCategoryChange(team.id, catKey, crit.max, val)}
+                            />
+                          );
+                        })}
+                        </div>
+                        
+                        <div className="flex justify-end pt-8 mt-4 border-t border-[#C9C9C9]">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (currentScore > 0) {
+                                localStorage.setItem(`eduinspire_locked_${user.userId}_${team.id}`, "true");
+                                setScores({...scores}); // force re-render
+                              } else {
+                                alert("Please provide a score before submitting.");
+                              }
+                            }}
+                            className="btn-primary py-3 px-8 shadow-md hover:shadow-lg"
+                          >
+                            <CheckCircle2 className="w-5 h-5" />
+                            Save Evaluation
+                          </button>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
+                </div>
               );
-            })}
+            })()}
 
             {/* Sticky Submit Bar */}
             <div className="fixed bottom-0 left-0 right-0 z-30 surface-panel border-t border-slate-800/80 p-4 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">

@@ -123,40 +123,34 @@ export default function LoginView({ onLoginSuccess }) {
   const RoleCard = ({ icon: Icon, title, desc, onClick }) => (
     <button 
       onClick={onClick}
-      className="group w-full text-left p-5 surface-card hover:border-indigo-500/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(79,70,229,0.1)] flex items-center justify-between"
+      className="group w-full text-left p-5 bg-[#E5E4E2] border border-[#C9C9C9] rounded-xl hover:bg-[#F1F0EE] transition-all duration-300 hover:-translate-y-1 shadow-md hover:shadow-lg flex items-center justify-between"
     >
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center text-slate-400 group-hover:text-indigo-400 group-hover:bg-indigo-500/10 transition-colors">
+        <div className="w-10 h-10 rounded-xl bg-[#111315]/10 flex items-center justify-center text-[#111315] group-hover:bg-[#111315]/15 transition-colors">
           <Icon className="w-5 h-5" />
         </div>
         <div>
-          <h4 className="font-semibold text-slate-100 text-[15px] group-hover:text-indigo-50 transition-colors">{title}</h4>
-          <p className="text-[12px] text-slate-400 mt-0.5">{desc}</p>
+          <h4 className="font-bold text-[#111315] text-[15px] uppercase tracking-wide">{title}</h4>
+          <p className="text-[12px] text-[#55585C] mt-0.5">{desc}</p>
         </div>
       </div>
-      <ArrowRight className="w-4 h-4 text-slate-600 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
+      <ArrowRight className="w-4 h-4 text-[#55585C] group-hover:text-[#111315] group-hover:translate-x-1 transition-all" />
     </button>
   );
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center p-4 animate-fade-up">
-      <div className="w-full max-w-lg surface-panel p-8 sm:p-10 relative overflow-hidden shadow-2xl">
-        {/* Glow accent */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl translate-y-1/3 -translate-x-1/3 pointer-events-none"></div>
-
+      <div className="w-full max-w-lg surface-panel p-8 sm:p-10 relative overflow-hidden shadow-2xl border border-white/5">
+        
         {/* Branding */}
         <div className="text-center space-y-2 mb-10 relative z-10">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-300 text-[10px] font-bold tracking-wider mb-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-slate-300 text-[10px] font-bold tracking-wider mb-2 uppercase">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>EVENT VOTING SYSTEM</span>
+            <span>Event Evaluation Platform</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">
-            EduInspire’26
+          <h1 className="text-4xl font-extrabold text-[#F5F5F5] tracking-tight">
+            eduinspire
           </h1>
-          <p className="text-sm text-slate-400">
-            Secure voting and evaluation platform
-          </p>
         </div>
 
         {error && (
@@ -168,29 +162,32 @@ export default function LoginView({ onLoginSuccess }) {
 
         <div className="relative z-10">
           {viewState === 'HOME' && (
-            <div className="space-y-3">
+            <div className="space-y-4">
+              <div className="text-center mb-6">
+                <span className="text-xs font-bold text-[#55585C] uppercase tracking-widest">Select Your Portal</span>
+              </div>
               <RoleCard 
                 icon={ShieldCheck} 
                 title="Admin" 
-                desc="Management and event control" 
+                desc="System Administration" 
                 onClick={() => navigateTo('ADMIN_LOGIN')}
               />
               <RoleCard 
                 icon={Gavel} 
                 title="Judge" 
-                desc="Evaluation and scoring" 
+                desc="Evaluation Panel" 
                 onClick={() => navigateTo('JUDGE_LOGIN')}
               />
               <RoleCard 
                 icon={UserCheck} 
-                title="Participant" 
-                desc="Team voting" 
+                title="Faculty Participant" 
+                desc="Faculty Team Participant" 
                 onClick={() => navigateTo('PARTICIPANT_LOGIN')}
               />
               <RoleCard 
                 icon={Users} 
                 title="Audience" 
-                desc="Audience voting" 
+                desc="Audience Evaluation" 
                 onClick={() => navigateTo('AUDIENCE_LOGIN')}
               />
             </div>
