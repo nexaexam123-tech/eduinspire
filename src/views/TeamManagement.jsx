@@ -41,7 +41,9 @@ export default function TeamManagement() {
     collegeName: '',
     deptName: '',
     faculty1: '',
+    faculty1Email: '',
     faculty2: '',
+    faculty2Email: '',
     presentationOrder: ''
   });
 
@@ -72,7 +74,9 @@ export default function TeamManagement() {
       collegeName: '',
       deptName: '',
       faculty1: '',
+      faculty1Email: '',
       faculty2: '',
+      faculty2Email: '',
       presentationOrder: teams.length + 1
     });
     setShowAddModal(true);
@@ -85,7 +89,9 @@ export default function TeamManagement() {
       collegeName: team.college_name,
       deptName: team.dept_name,
       faculty1: team.faculty_1,
+      faculty1Email: team.faculty_1_email || '',
       faculty2: team.faculty_2,
+      faculty2Email: team.faculty_2_email || '',
       presentationOrder: team.presentation_order
     });
     setShowEditModal(true);
@@ -137,6 +143,7 @@ export default function TeamManagement() {
       console.error(err);
     }
   };
+
 
   const handleDelete = async (teamId) => {
     if (!window.confirm('Are you sure you want to delete this team?')) return;
@@ -571,26 +578,52 @@ export default function TeamManagement() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">Faculty 1</label>
+                  <label className="block text-xs font-bold text-slate-800 mb-1.5">Faculty 1 Name</label>
                   <input
                     type="text" required
+                    placeholder="e.g. Dr. Ramesh Kumar"
                     value={formData.faculty1}
                     onChange={(e) => setFormData({ ...formData, faculty1: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-white border-2 border-slate-300 rounded-xl text-slate-950 font-semibold focus:border-indigo-600 focus:outline-none"
+                    className="w-full px-3.5 py-2 bg-white border-2 border-slate-300 rounded-xl text-slate-950 font-semibold focus:border-indigo-600 focus:outline-none text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">Faculty 2</label>
+                  <label className="block text-xs font-bold text-slate-800 mb-1.5">Faculty 1 Email ID</label>
                   <input
-                    type="text" required
-                    value={formData.faculty2}
-                    onChange={(e) => setFormData({ ...formData, faculty2: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-white border-2 border-slate-300 rounded-xl text-slate-950 font-semibold focus:border-indigo-600 focus:outline-none"
+                    type="email"
+                    placeholder="e.g. ramesh@iitm.ac.in"
+                    value={formData.faculty1Email}
+                    onChange={(e) => setFormData({ ...formData, faculty1Email: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-white border-2 border-slate-300 rounded-xl text-slate-950 font-semibold focus:border-indigo-600 focus:outline-none text-sm"
                   />
                 </div>
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-1.5">Faculty 2 Name</label>
+                  <input
+                    type="text" required
+                    placeholder="e.g. Prof. Anitha Sundaram"
+                    value={formData.faculty2}
+                    onChange={(e) => setFormData({ ...formData, faculty2: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-white border-2 border-slate-300 rounded-xl text-slate-950 font-semibold focus:border-indigo-600 focus:outline-none text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-1.5">Faculty 2 Email ID</label>
+                  <input
+                    type="email"
+                    placeholder="e.g. anitha@iitm.ac.in"
+                    value={formData.faculty2Email}
+                    onChange={(e) => setFormData({ ...formData, faculty2Email: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-white border-2 border-slate-300 rounded-xl text-slate-950 font-semibold focus:border-indigo-600 focus:outline-none text-sm"
+                  />
+                </div>
+              </div>
+
 
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1.5">Presentation Order</label>

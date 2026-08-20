@@ -729,7 +729,7 @@ app.get('/api/teams/:id', async (req, res) => {
 
 app.post('/api/teams', async (req, res) => {
   try {
-    const { teamName, collegeName, deptName, faculty1, faculty2 } = req.body;
+    const { teamName, collegeName, deptName, faculty1, faculty1Email, faculty2, faculty2Email } = req.body;
 
     if (!teamName || !collegeName || !deptName || !faculty1 || !faculty2) {
       return res.status(400).json({ error: 'All fields are required.' });
@@ -741,9 +741,9 @@ app.post('/api/teams', async (req, res) => {
     const teamCode = `T${newOrder.toString().padStart(2, '0')}`;
 
     const [result] = await db.query(`
-      INSERT INTO teams (team_code, team_name, college_name, dept_name, faculty_1, faculty_2, presentation_order)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [teamCode, teamName, collegeName, deptName, faculty1, faculty2, newOrder]);
+      INSERT INTO teams (team_code, team_name, college_name, dept_name, faculty_1, faculty_1_email, faculty_2, faculty_2_email, presentation_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [teamCode, teamName, collegeName, deptName, faculty1, faculty1Email || null, faculty2, faculty2Email || null, newOrder]);
 
     const teamId = result.insertId;
 
@@ -753,8 +753,8 @@ app.post('/api/teams', async (req, res) => {
     const p1Id = `P${(userCount + 1).toString().padStart(3, '0')}`;
     const p2Id = `P${(userCount + 2).toString().padStart(3, '0')}`;
 
-    await db.query('INSERT INTO users (user_id, access_code, role, team_id) VALUES (?, ?, ?, ?)', [p1Id, generateAccessCode(), 'PARTICIPANT', teamId]);
-    await db.query('INSERT INTO users (user_id, access_code, role, team_id) VALUES (?, ?, ?, ?)', [p2Id, generateAccessCode(), 'PARTICIPANT', teamId]);
+    await db.query('INSERT INTO users (user_id, email, access_code, role, team_id) VALUES (?, ?, ?, ?, ?)', [p1Id, faculty1Email || null, generateAccessCode(), 'PARTICIPANT', teamId]);
+    await db.query('INSERT INTO users (user_id, email, access_code, role, team_id) VALUES (?, ?, ?, ?, ?)', [p2Id, faculty2Email || null, generateAccessCode(), 'PARTICIPANT', teamId]);
 
     const [createdRows] = await db.query('SELECT * FROM teams WHERE id = ?', [teamId]);
     res.status(201).json(createdRows[0]);
@@ -766,7 +766,7 @@ app.post('/api/teams', async (req, res) => {
 
 app.put('/api/teams/:id', async (req, res) => {
   try {
-    const { teamName, collegeName, deptName, faculty1, faculty2, presentationOrder } = req.body;
+    const { teamName, collegeName, deptName, faculty1, faculty1Email, faculty2, faculty2Email, presentationOrder } = req.body;
     const teamId = req.params.id;
 
     const [tRows] = await db.query('SELECT * FROM teams WHERE id = ?', [teamId]);
@@ -775,17 +775,28 @@ app.put('/api/teams/:id', async (req, res) => {
 
     await db.query(`
       UPDATE teams
-      SET team_name = ?, college_name = ?, dept_name = ?, faculty_1 = ?, faculty_2 = ?, presentation_order = ?
+      SET team_name = ?, college_name = ?, dept_name = ?, faculty_1 = ?, faculty_1_email = ?, faculty_2 = ?, faculty_2_email = ?, presentation_order = ?
       WHERE id = ?
     `, [
       teamName || existing.team_name,
       collegeName || existing.college_name,
       deptName || existing.dept_name,
       faculty1 || existing.faculty_1,
+      faculty1Email !== undefined ? faculty1Email : existing.faculty_1_email,
       faculty2 || existing.faculty_2,
+      faculty2Email !== undefined ? faculty2Email : existing.faculty_2_email,
       presentationOrder || existing.presentation_order,
       teamId
     ]);
+
+    // Update user emails if linked
+    const [teamUsers] = await db.query("SELECT id FROM users WHERE team_id = ? AND role = 'PARTICIPANT' ORDER BY id ASC", [teamId]);
+    if (teamUsers.length >= 1 && faculty1Email) {
+      await db.query("UPDATE users SET email = ? WHERE id = ?", [faculty1Email, teamUsers[0].id]);
+    }
+    if (teamUsers.length >= 2 && faculty2Email) {
+      await db.query("UPDATE users SET email = ? WHERE id = ?", [faculty2Email, teamUsers[1].id]);
+    }
 
     const [updatedRows] = await db.query('SELECT * FROM teams WHERE id = ?', [teamId]);
     res.json(updatedRows[0]);
@@ -830,7 +841,9 @@ app.post('/api/teams/bulk-upload', upload.single('file'), async (req, res) => {
       const collegeName = row.CollegeName || row['College Name'] || row.College;
       const deptName = row.DepartmentName || row.Department || row['Department Name'];
       const f1 = row.Faculty1 || row['Faculty 1'];
+      const f1Email = row.Faculty1Email || row['Faculty 1 Email'] || row['Faculty 1 Email ID'] || row['Faculty1 Email ID'];
       const f2 = row.Faculty2 || row['Faculty 2'];
+      const f2Email = row.Faculty2Email || row['Faculty 2 Email'] || row['Faculty 2 Email ID'] || row['Faculty2 Email ID'];
 
       if (!teamName || !collegeName) continue;
 
@@ -839,17 +852,22 @@ app.post('/api/teams/bulk-upload', upload.single('file'), async (req, res) => {
       if (existsRows.length > 0) {
         await conn.query(`
           UPDATE teams 
-          SET dept_name = ?, faculty_1 = ?, faculty_2 = ?
+          SET dept_name = ?, faculty_1 = ?, faculty_1_email = ?, faculty_2 = ?, faculty_2_email = ?
           WHERE id = ?
-        `, [deptName || 'N/A', f1 || 'N/A', f2 || 'N/A', existsRows[0].id]);
+        `, [deptName || 'N/A', f1 || 'N/A', f1Email || null, f2 || 'N/A', f2Email || null, existsRows[0].id]);
+
+        const [existingTeamUsers] = await conn.query("SELECT id FROM users WHERE team_id = ? AND role = 'PARTICIPANT' ORDER BY id ASC", [existsRows[0].id]);
+        if (existingTeamUsers.length >= 1 && f1Email) await conn.query("UPDATE users SET email = ? WHERE id = ?", [f1Email, existingTeamUsers[0].id]);
+        if (existingTeamUsers.length >= 2 && f2Email) await conn.query("UPDATE users SET email = ? WHERE id = ?", [f2Email, existingTeamUsers[1].id]);
+
         addedCount++;
         continue;
       }
 
       const teamCode = `T${nextOrder.toString().padStart(2, '0')}`;
       const [result] = await conn.query(
-        `INSERT INTO teams (team_code, team_name, college_name, dept_name, faculty_1, faculty_2, presentation_order) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [teamCode, teamName, collegeName, deptName || 'N/A', f1 || 'N/A', f2 || 'N/A', nextOrder]
+        `INSERT INTO teams (team_code, team_name, college_name, dept_name, faculty_1, faculty_1_email, faculty_2, faculty_2_email, presentation_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [teamCode, teamName, collegeName, deptName || 'N/A', f1 || 'N/A', f1Email || null, f2 || 'N/A', f2Email || null, nextOrder]
       );
       const teamId = result.insertId;
       
@@ -857,8 +875,8 @@ app.post('/api/teams/bulk-upload', upload.single('file'), async (req, res) => {
       const p2Id = `P${(userCount + 2).toString().padStart(3, '0')}`;
       userCount += 2;
 
-      await conn.query('INSERT INTO users (user_id, access_code, role, team_id) VALUES (?, ?, ?, ?)', [p1Id, generateAccessCode(), 'PARTICIPANT', teamId]);
-      await conn.query('INSERT INTO users (user_id, access_code, role, team_id) VALUES (?, ?, ?, ?)', [p2Id, generateAccessCode(), 'PARTICIPANT', teamId]);
+      await conn.query('INSERT INTO users (user_id, email, access_code, role, team_id) VALUES (?, ?, ?, ?, ?)', [p1Id, f1Email || null, generateAccessCode(), 'PARTICIPANT', teamId]);
+      await conn.query('INSERT INTO users (user_id, email, access_code, role, team_id) VALUES (?, ?, ?, ?, ?)', [p2Id, f2Email || null, generateAccessCode(), 'PARTICIPANT', teamId]);
 
       nextOrder++;
       addedCount++;

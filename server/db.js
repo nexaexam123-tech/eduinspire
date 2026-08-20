@@ -90,11 +90,18 @@ export async function initDatabase() {
         college_name VARCHAR(255) NOT NULL,
         dept_name VARCHAR(255) NOT NULL,
         faculty_1 VARCHAR(255) NOT NULL,
+        faculty_1_email VARCHAR(255) NULL,
         faculty_2 VARCHAR(255) NOT NULL,
+        faculty_2_email VARCHAR(255) NULL,
         presentation_order INT UNIQUE NOT NULL,
         presentation_status VARCHAR(50) DEFAULT 'NOT_STARTED'
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
+
+    // Ensure columns exist if table was already created
+    try { await db.query(`ALTER TABLE teams ADD COLUMN faculty_1_email VARCHAR(255) NULL;`); } catch (e) {}
+    try { await db.query(`ALTER TABLE teams ADD COLUMN faculty_2_email VARCHAR(255) NULL;`); } catch (e) {}
+
 
     // Users table
     await db.query(`
