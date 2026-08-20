@@ -1190,7 +1190,15 @@ app.get('/api/results/dashboard', async (req, res) => {
              SUM(CASE WHEN judge_id = 'Judge 1' THEN total_score ELSE 0 END) as j1_score,
              SUM(CASE WHEN judge_id = 'Judge 2' THEN total_score ELSE 0 END) as j2_score,
              COUNT(DISTINCT judge_id) as judge_count,
-             AVG(total_score) as avg_score
+             AVG(total_score) as avg_score,
+             AVG(student_impact) as avg_student,
+             AVG(faculty_impact) as avg_faculty,
+             AVG(admin_impact) as avg_admin,
+             AVG(social_impact) as avg_social,
+             AVG(innovation) as avg_innovation,
+             AVG(implementation) as avg_implementation,
+             AVG(outcomes) as avg_outcomes,
+             AVG(replicability) as avg_replicability
       FROM judge_scores
       GROUP BY team_id
     `);
@@ -1265,7 +1273,17 @@ app.get('/api/results/dashboard', async (req, res) => {
         judgeCount: count,
         avgScore: avgScore,
         isManualScore: manualScoreJudgeMap[t.id] !== undefined,
-        manualRank: manualJudgeMap[t.id] || null
+        manualRank: manualJudgeMap[t.id] || null,
+        criteria: {
+          studentImpact: js ? Math.round(Number(js.avg_student) * 100) / 100 : 0,
+          facultyImpact: js ? Math.round(Number(js.avg_faculty) * 100) / 100 : 0,
+          adminImpact: js ? Math.round(Number(js.avg_admin) * 100) / 100 : 0,
+          socialImpact: js ? Math.round(Number(js.avg_social) * 100) / 100 : 0,
+          innovation: js ? Math.round(Number(js.avg_innovation) * 100) / 100 : 0,
+          implementation: js ? Math.round(Number(js.avg_implementation) * 100) / 100 : 0,
+          outcomes: js ? Math.round(Number(js.avg_outcomes) * 100) / 100 : 0,
+          replicability: js ? Math.round(Number(js.avg_replicability) * 100) / 100 : 0
+        }
       };
     });
 
@@ -1317,7 +1335,17 @@ app.get('/api/results/dashboard', async (req, res) => {
         evalCount: as ? Number(as.eval_count) : 0,
         avgScore: avgScore,
         isManualScore: manualScoreAudienceMap[t.id] !== undefined,
-        manualRank: manualAudienceMap[t.id] || null
+        manualRank: manualAudienceMap[t.id] || null,
+        criteria: {
+          studentImpact: as ? Math.round(Number(as.avg_student) * 100) / 100 : 0,
+          facultyImpact: as ? Math.round(Number(as.avg_faculty) * 100) / 100 : 0,
+          adminImpact: as ? Math.round(Number(as.avg_admin) * 100) / 100 : 0,
+          socialImpact: as ? Math.round(Number(as.avg_social) * 100) / 100 : 0,
+          innovation: as ? Math.round(Number(as.avg_innovation) * 100) / 100 : 0,
+          implementation: as ? Math.round(Number(as.avg_implementation) * 100) / 100 : 0,
+          outcomes: as ? Math.round(Number(as.avg_outcomes) * 100) / 100 : 0,
+          replicability: as ? Math.round(Number(as.avg_replicability) * 100) / 100 : 0
+        }
       };
     });
 

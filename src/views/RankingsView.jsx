@@ -17,6 +17,19 @@ export default function RankingsView({ user }) {
   const [editingScoreTeamId, setEditingScoreTeamId] = useState(null);
   const [newScoreValue, setNewScoreValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('total');
+
+  const SORT_OPTIONS = [
+    { value: 'total',          label: 'Total Score' },
+    { value: 'studentImpact', label: 'Student Impact (20)' },
+    { value: 'facultyImpact', label: 'Faculty Impact (10)' },
+    { value: 'adminImpact',   label: 'Institutional Impact (10)' },
+    { value: 'socialImpact',  label: 'Social / Community Impact (10)' },
+    { value: 'innovation',    label: 'Innovation & Distinctiveness (20)' },
+    { value: 'implementation',label: 'Planning & Implementation (15)' },
+    { value: 'outcomes',      label: 'Evidence of Outcomes (10)' },
+    { value: 'replicability', label: 'Learning & Replicability (5)' },
+  ];
 
   const fetchRankings = async () => {
     try {
@@ -197,6 +210,11 @@ export default function RankingsView({ user }) {
       team.teamCode.toLowerCase().includes(q) ||
       team.collegeName.toLowerCase().includes(q)
     );
+  }).sort((a, b) => {
+    if (sortBy === 'total') return 0; // keep server order
+    const aVal = a.criteria?.[sortBy] ?? 0;
+    const bVal = b.criteria?.[sortBy] ?? 0;
+    return bVal - aVal;
   });
 
   return (
@@ -291,6 +309,19 @@ export default function RankingsView({ user }) {
                 className="pl-9 pr-3 py-2 bg-white border border-[#C9C9C9] rounded-lg text-sm text-[#111315] font-semibold focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-full sm:w-64"
               />
             </div>
+            {/* Sort By Dropdown */}
+            <div className="relative w-full sm:w-auto">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full sm:w-56 pl-3 pr-8 py-2 bg-white border border-[#C9C9C9] rounded-lg text-sm text-[#111315] font-semibold focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 appearance-none cursor-pointer"
+              >
+                {SORT_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute right-2.5 top-2.5 text-[#55585C]">▼</div>
+            </div>
             {isAdmin && (
               <button
                 onClick={handleSaveReorder}
@@ -310,7 +341,12 @@ export default function RankingsView({ user }) {
               <tr>
                 <th className="py-2.5 px-3 text-center">Rank</th>
                 <th className="py-2.5 px-3">Team Details</th>
-                <th className="py-2.5 px-3 text-center">{activeTab === 'JUDGE' ? 'Avg Score' : 'Score'}</th>
+                <th className="py-2.5 px-3 text-center">
+                  {sortBy === 'total'
+                    ? (activeTab === 'JUDGE' ? 'Avg Score' : 'Score')
+                    : SORT_OPTIONS.find(o => o.value === sortBy)?.label.split(' (')[0]
+                  }
+                </th>
                 <th className="py-2.5 px-3 text-center">Award</th>
                 {isAdmin && <th className="py-2.5 px-3 text-center">Reorder</th>}
               </tr>
@@ -378,9 +414,19 @@ export default function RankingsView({ user }) {
                           </div>
                         ) : (
                           <div className="flex items-center justify-center gap-2 group">
-                            <span className={`text-lg font-black ${getScoreColor(rankNum)} ${team.isManualScore ? 'border-b border-dashed' : ''}`}>
-                              {team.avgScore}
-                            </span>
+                            <div className="text-center">
+                              <span className={`text-lg font-black ${getScoreColor(rankNum)} ${team.isManualScore ? 'border-b border-dashed' : ''}`}>
+                                {sortBy === 'total'
+                                  ? team.avgScore
+                                  : (team.criteria?.[sortBy] ?? 0)
+                                }
+                              </span>
+                              {sortBy !== 'total' && (
+                                <div className="text-[10px] text-[#55585C] font-semibold mt-0.5">
+                                  Total: {team.avgScore}
+                                </div>
+                              )}
+                            </div>
                             {isTied && rankNum > 5 && (
                               <AlertTriangle className="w-4 h-4 text-amber-500" title="Tied Score" />
                             )}
