@@ -159,13 +159,24 @@ export default function AdminDashboard({ onNavigate }) {
     setActionLoading(true);
     try {
       if (action === 'TOGGLE') {
-        await fetch('/api/event/presentation/timer', { method: 'POST' });
+        const nextAction = eventState?.timer_running === 1 ? 'pause' : 'start';
+        await fetch('/api/event/presentation/timer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: nextAction })
+        });
+      } else if (action === 'RESET') {
+        await fetch('/api/event/presentation/timer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'reset' })
+        });
       } else if (action === 'EDIT') {
         const totalSec = pHours * 3600 + pMinutes * 60 + pSeconds;
         await fetch('/api/event/presentation/set-timer', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ timerSeconds: totalSec })
+          body: JSON.stringify({ durationSeconds: totalSec })
         });
         setIsEditingPTimer(false);
       }
