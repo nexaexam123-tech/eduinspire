@@ -21,8 +21,15 @@ export default function LoginView({ onLoginSuccess }) {
     setViewState(state);
     setError(null);
     setOtpSent(false);
-    setUserId('');
-    setPassword('');
+    
+    if (state === 'ADMIN_LOGIN') {
+      setUserId('admin');
+      setPassword('admin123');
+    } else {
+      setUserId('');
+      setPassword('');
+    }
+    
     setAudienceEmail('');
     setOtp('');
   };
@@ -236,52 +243,12 @@ export default function LoginView({ onLoginSuccess }) {
                 </button>
                 
                 {viewState === 'ADMIN_LOGIN' && (
-                  <div className="text-center pt-4 border-t border-slate-800/50 mt-6">
-                    <button type="button" onClick={() => navigateTo('ADMIN_REGISTER')} className="text-[13px] text-slate-400 hover:text-indigo-400 transition-colors">
-                      Register a new Admin account
-                    </button>
+                  <div className="text-center pt-4 border-t border-[#C9C9C9] mt-6">
+                    <p className="text-[13px] font-bold text-[#55585C]">
+                      Default Admin Credentials Auto-Filled
+                    </p>
                   </div>
                 )}
-              </form>
-            </div>
-          )}
-
-          {viewState === 'ADMIN_REGISTER' && (
-            <div className="space-y-5 animate-fade-up">
-              <button onClick={() => navigateTo('ADMIN_LOGIN')} className="text-[13px] text-slate-400 hover:text-white flex items-center gap-1 mb-2 transition-colors">
-                <ChevronLeft className="w-4 h-4" /> Back to Login
-              </button>
-              
-              <div className="mb-6">
-                <h2 className="text-xl font-bold text-white">Register Admin</h2>
-                <p className="text-xs text-slate-400 mt-1">Create a new administrator account.</p>
-              </div>
-
-              <form onSubmit={handleAdminRegister} className="space-y-5">
-                <div>
-                  <label className="block text-[13px] font-medium text-slate-300 mb-1.5">New Admin Username</label>
-                  <input
-                    type="text" required placeholder="Choose a username"
-                    value={userId} onChange={e => setUserId(e.target.value)}
-                    className="form-input"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[13px] font-medium text-slate-300 mb-1.5">New Password</label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"} required placeholder="Choose a password"
-                      value={password} onChange={e => setPassword(e.target.value)}
-                      className="form-input pr-10"
-                    />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors">
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-                <button type="submit" disabled={loading} className="btn-primary w-full mt-2">
-                  {loading ? 'Creating...' : 'Create Account'}
-                </button>
               </form>
             </div>
           )}
