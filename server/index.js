@@ -3,6 +3,7 @@ import cors from 'cors';
 import multer from 'multer';
 import xlsx from 'xlsx';
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import 'dotenv/config';
 import db, { initDatabase } from './db.js';
 
@@ -186,7 +187,40 @@ app.post('/api/auth/request-otp', async (req, res) => {
   };
 
   try {
-    if (process.env.SMTP_USER && process.env.SMTP_PASS && process.env.SMTP_USER !== 'your-email@gmail.com') {
+    if (process.env.BREVO_API_KEY) {
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': process.env.BREVO_API_KEY,
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: { 
+            email: process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER, 
+            name: 'EduInspire Event Portal' 
+          },
+          to: [{ email: cleanEmail }],
+          subject: 'Your Audience Voting OTP - EduInspire',
+          htmlContent: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
+              <h2 style="color: #4f46e5;">EduInspire Voting Portal</h2>
+              <p>Your one-time password (OTP) for audience voting is:</p>
+              <div style="background-color: #f1f5f9; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; border-radius: 8px; margin: 20px 0;">
+                ${otp}
+              </div>
+              <p style="color: #64748b; font-size: 14px;">This code is valid for 10 minutes. Please do not share this code with anyone.</p>
+            </div>
+          `
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Brevo API Error');
+      }
+      console.log(`[BREVO EMAIL SERVICE] -> Sent to: ${cleanEmail}`);
+    } else if (process.env.SMTP_USER && process.env.SMTP_PASS && process.env.SMTP_USER !== 'your-email@gmail.com') {
       await transporter.sendMail(mailOptions);
       console.log(`[SMTP EMAIL SERVICE] -> Sent to: ${cleanEmail} via port ${smtpPort}`);
     } else {
@@ -198,7 +232,7 @@ app.post('/api/auth/request-otp', async (req, res) => {
     }
     res.json({ success: true, message: 'OTP sent to your email.' });
   } catch (error) {
-    console.error('SMTP Error:', error);
+    console.error('Email API/SMTP Error:', error);
     res.status(500).json({ error: 'Failed to send OTP email. Please contact administrator.' });
   }
 });
