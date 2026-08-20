@@ -291,7 +291,11 @@ export default function VoterEvaluationView({ user, onLogout }) {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8 pt-4 border-t border-slate-700/50 mt-4">
+                    <div className="space-y-4 pt-4 border-t border-slate-700/50 mt-4">
+                      <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest border-l-4 border-indigo-500 pl-3">
+                        Evaluation Criteria
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8 mt-4">
                       {getCriteriaList().map(crit => {
                         const catVal = categoryScores[team.id]?.[crit.key];
                         return (
@@ -306,6 +310,7 @@ export default function VoterEvaluationView({ user, onLogout }) {
                           />
                         );
                       })}
+                    </div>
                     </div>
                     <div className="flex justify-between items-center pt-5 border-t border-slate-700/50 mt-6">
                       <span className="text-sm font-bold text-white">TOTAL SCORE:</span>
