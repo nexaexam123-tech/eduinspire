@@ -320,18 +320,18 @@ export default function VoterEvaluationView({ user, onLogout }) {
       )}
 
       {/* Top Header */}
-      <div className="surface-panel p-4 mb-4 flex items-center justify-between sticky top-4 z-40 shadow-lg border border-slate-800">
+      <div className="surface-panel p-4 mb-4 flex items-center justify-between sticky top-4 z-40 shadow-sm border border-[#C9C9C9]">
         <div>
-          <h2 className="text-lg font-bold text-white leading-tight flex items-center gap-2">
+          <h2 className="text-lg font-bold text-[#111315] leading-tight flex items-center gap-2">
             <span>{user.role === 'PARTICIPANT' ? 'Faculty Evaluation' : 'Audience Evaluation'}</span>
             {isVotingOpen && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" /> Live
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-ping" /> Live
               </span>
             )}
           </h2>
-          <div className="text-[11px] text-slate-400 mt-0.5">
-            <span className="font-mono text-indigo-300 font-bold">{user.email || user.userId}</span>
+          <div className="text-xs text-[#55585C] mt-0.5">
+            <span className="font-mono text-indigo-700 font-bold">{user.email || user.userId}</span>
             {user.collegeName && <span> &bull; {user.collegeName}</span>}
           </div>
         </div>
@@ -341,7 +341,7 @@ export default function VoterEvaluationView({ user, onLogout }) {
             <button
               type="button"
               onClick={openPreview}
-              className="btn-secondary px-3.5 py-1.5 text-xs flex items-center gap-1.5 text-indigo-300 hover:text-white"
+              className="btn-secondary px-3.5 py-1.5 text-xs flex items-center gap-1.5 text-indigo-700 hover:text-indigo-900 border-indigo-200"
             >
               <ListChecks className="w-4 h-4" />
               <span>Preview ({votedCount}/{requiredCount})</span>
@@ -350,7 +350,7 @@ export default function VoterEvaluationView({ user, onLogout }) {
           <button 
             onClick={onLogout} 
             title="Log out" 
-            className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-rose-400 transition-colors"
+            className="p-2 rounded-xl bg-[#F1F0EE] border border-[#C9C9C9] text-[#55585C] hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 transition-colors"
           >
             <LogOut className="w-5 h-5" />
           </button>
@@ -359,13 +359,13 @@ export default function VoterEvaluationView({ user, onLogout }) {
 
       {/* Case 1: Voting is Closed */}
       {!isVotingOpen && (
-        <div className="surface-card p-10 text-center space-y-5 animate-fade-up">
-          <div className="w-20 h-20 bg-indigo-500/10 border border-indigo-500/30 rounded-full flex items-center justify-center mx-auto text-indigo-400">
+        <div className="surface-card p-10 text-center space-y-5 animate-fade-up border border-[#C9C9C9] bg-[#E5E4E2]">
+          <div className="w-20 h-20 bg-indigo-100 border-2 border-indigo-300 rounded-full flex items-center justify-center mx-auto text-indigo-700 shadow-sm">
             <Lock className="w-10 h-10" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-2xl font-bold text-white">Voting is Currently Closed</h3>
-            <p className="text-sm text-slate-400 max-w-sm mx-auto leading-relaxed">
+            <h3 className="text-2xl font-black text-[#111315]">Voting is Currently Closed</h3>
+            <p className="text-sm font-medium text-[#55585C] max-w-sm mx-auto leading-relaxed">
               Evaluation will become available once the administrator starts the voting session.
             </p>
           </div>
@@ -377,37 +377,37 @@ export default function VoterEvaluationView({ user, onLogout }) {
         <div className="space-y-5 animate-fade-up">
           
           {/* Status & Progress Card */}
-          <div className="surface-card p-4">
+          <div className="surface-card p-4 border border-[#C9C9C9]">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <h3 className="text-base font-bold text-[#111315] flex items-center gap-2">
                   <span>Evaluation Progress</span>
                   {isComplete ? (
-                    <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                    <span className="text-xs font-semibold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
                       All Teams Scored
                     </span>
                   ) : (
-                    <span className="text-xs font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                    <span className="text-xs font-semibold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
                       {votedCount} of {requiredCount} Scored
                     </span>
                   )}
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">{requiredCount} total teams to evaluate</p>
+                <p className="text-xs text-[#55585C] mt-1 font-medium">{requiredCount} total teams to evaluate</p>
               </div>
 
               <div className="flex items-center gap-4">
                 {state?.timer_running === 1 && (
                   <div className="text-right">
-                    <div className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">Presentation</div>
-                    <div className="text-lg font-mono font-bold text-rose-300">
+                    <div className="text-[10px] font-bold text-rose-700 uppercase tracking-wider">Presentation</div>
+                    <div className="text-lg font-mono font-bold text-rose-800">
                       {formatTime(state?.timer_remaining)}
                     </div>
                   </div>
                 )}
                 {state?.voting_timer_running === 1 && (
                   <div className="text-right">
-                    <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Voting Timer</div>
-                    <div className="text-lg font-mono font-bold text-indigo-300">
+                    <div className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider">Voting Timer</div>
+                    <div className="text-lg font-mono font-bold text-indigo-800">
                       {formatTime(state?.voting_timer_remaining)}
                     </div>
                   </div>
@@ -416,13 +416,13 @@ export default function VoterEvaluationView({ user, onLogout }) {
             </div>
 
             <div className="space-y-2">
-              <div className="flex justify-between text-xs font-semibold">
-                <span className="text-slate-300">{votedCount} / {requiredCount} teams scored ({submittedTeamIds.length} submitted)</span>
-                <span className="text-indigo-400 font-mono">{Math.round(progressPercent)}%</span>
+              <div className="flex justify-between text-xs font-bold text-[#111315]">
+                <span>{votedCount} / {requiredCount} teams scored ({submittedTeamIds.length} submitted)</span>
+                <span className="text-indigo-700 font-mono">{Math.round(progressPercent)}%</span>
               </div>
-              <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div className="w-full h-2.5 bg-[#C9C9C9] rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-indigo-500 transition-all duration-500 ease-out rounded-full"
+                  className="h-full bg-indigo-600 transition-all duration-500 ease-out rounded-full"
                   style={{ width: `${progressPercent}%` }}
                 ></div>
               </div>
@@ -430,20 +430,20 @@ export default function VoterEvaluationView({ user, onLogout }) {
 
             {/* Team Navigation Tabs */}
             {eligibleTeams.length > 1 && (
-              <div className="mt-4 pt-4 border-t border-slate-800">
+              <div className="mt-4 pt-4 border-t border-[#C9C9C9]">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Select Team to Evaluate</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#55585C]">Select Team to Evaluate</span>
                   {currentLiveTeamId && (
                     <button
                       type="button"
                       onClick={() => setActiveTeamId(currentLiveTeamId)}
                       className={`text-[11px] font-bold px-2 py-0.5 rounded transition-all flex items-center gap-1 ${
                         activeTeamId === currentLiveTeamId 
-                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                          : 'bg-slate-800 text-slate-400 hover:text-white'
+                          ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                          : 'bg-[#F1F0EE] border border-[#C9C9C9] text-[#55585C] hover:text-[#111315] hover:bg-white'
                       }`}
                     >
-                      <Radio className="w-3 h-3 text-rose-400 animate-pulse" /> Jump to Live Team
+                      <Radio className="w-3 h-3 text-rose-600 animate-pulse" /> Jump to Live Team
                     </button>
                   )}
                 </div>
@@ -460,26 +460,26 @@ export default function VoterEvaluationView({ user, onLogout }) {
                         key={team.id}
                         type="button"
                         onClick={() => setActiveTeamId(team.id)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1.5 transition-all shrink-0 ${
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all shrink-0 border ${
                           isSelected
-                            ? 'bg-indigo-600 text-white shadow-md font-bold'
+                            ? 'bg-indigo-600 text-white border-indigo-700 shadow-md font-bold'
                             : isSubmitted
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20'
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200'
                             : hasScored
-                            ? 'bg-slate-800 text-indigo-300 hover:bg-slate-700'
-                            : 'bg-slate-800/40 text-slate-400 hover:bg-slate-800'
+                            ? 'bg-white text-indigo-800 border-indigo-200 hover:bg-indigo-50'
+                            : 'bg-[#F1F0EE] border-[#C9C9C9] text-[#55585C] hover:bg-white hover:text-[#111315]'
                         }`}
                       >
-                        {isLive && <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping shrink-0" />}
+                        {isLive && <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping shrink-0" />}
                         <span>#{team.presentation_order || idx + 1} {team.team_name.length > 12 ? team.team_name.slice(0, 10) + '..' : team.team_name}</span>
                         {hasScored ? (
-                          <span className={`text-[10px] font-mono px-1 rounded ${isSelected ? 'bg-indigo-700 text-white' : 'bg-indigo-900/40 text-indigo-300'}`}>
+                          <span className={`text-[10px] font-mono px-1 rounded ${isSelected ? 'bg-indigo-800 text-white' : 'bg-indigo-100 text-indigo-800 font-bold'}`}>
                             {scores[team.id]}
                           </span>
                         ) : (
-                          <span className="text-[10px] text-slate-500 font-mono">--</span>
+                          <span className="text-[10px] text-[#55585C] font-mono">--</span>
                         )}
-                        {isSubmitted && <Check className="w-3 h-3 text-emerald-400 shrink-0" />}
+                        {isSubmitted && <Check className="w-3 h-3 text-emerald-700 shrink-0" />}
                       </button>
                     );
                   })}
@@ -489,8 +489,8 @@ export default function VoterEvaluationView({ user, onLogout }) {
           </div>
 
           {error && (
-            <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-sm flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+            <div className="p-4 bg-rose-50 border border-rose-300 rounded-xl text-rose-700 text-sm font-semibold flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -626,15 +626,15 @@ export default function VoterEvaluationView({ user, onLogout }) {
               </div>
             </div>
           ) : (
-            <div className="surface-card p-10 text-center space-y-4 border border-dashed border-slate-700">
-              <Eye className="w-8 h-8 mx-auto text-slate-500" />
-              <h3 className="text-lg font-bold text-white">No Teams Available</h3>
-              <p className="text-sm text-slate-400">Waiting for teams to be configured by the administrator.</p>
+            <div className="surface-card p-10 text-center space-y-4 border border-dashed border-[#C9C9C9]">
+              <Eye className="w-8 h-8 mx-auto text-[#55585C]" />
+              <h3 className="text-lg font-bold text-[#111315]">No Teams Available</h3>
+              <p className="text-sm text-[#55585C]">Waiting for teams to be configured by the administrator.</p>
             </div>
           )}
 
           {/* Sticky Bottom Preview & Finish Bar */}
-          <div className="fixed bottom-0 left-0 right-0 z-30 surface-panel border-t border-slate-800/90 p-3 sm:p-4 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+          <div className="fixed bottom-0 left-0 right-0 z-30 surface-panel border-t border-[#C9C9C9] p-3 sm:p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
             <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <button
@@ -656,10 +656,10 @@ export default function VoterEvaluationView({ user, onLogout }) {
                   <span className="hidden sm:inline">Next</span> <ChevronRight className="w-4 h-4" />
                 </button>
 
-                <div className="hidden md:block text-xs text-slate-400 font-medium">
+                <div className="hidden md:block text-xs text-[#55585C] font-semibold">
                   <span>{votedCount} of {requiredCount} teams scored</span>
                   {submittedTeamIds.length > 0 && (
-                    <span className="text-emerald-400 ml-2 font-bold">({submittedTeamIds.length} submitted)</span>
+                    <span className="text-emerald-700 ml-2 font-bold">({submittedTeamIds.length} submitted)</span>
                   )}
                 </div>
               </div>
@@ -689,46 +689,46 @@ export default function VoterEvaluationView({ user, onLogout }) {
 
           {/* Full Preview & Finish Modal */}
           {showPreviewModal && (
-            <div className="fixed inset-0 z-50 bg-[#0B1120]/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-up">
-              <div className="w-full max-w-2xl surface-panel max-h-[85vh] flex flex-col shadow-2xl relative border border-slate-700/80 rounded-2xl overflow-hidden">
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-up">
+              <div className="w-full max-w-2xl bg-white max-h-[85vh] flex flex-col shadow-2xl relative border border-[#C9C9C9] rounded-2xl overflow-hidden text-[#111315]">
                 
                 {/* Modal Header */}
-                <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+                <div className="p-5 border-b border-[#C9C9C9] flex items-center justify-between bg-[#F1F0EE]">
                   <div>
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                      <ListChecks className="w-5 h-5 text-indigo-400" />
+                    <h3 className="text-lg font-bold text-[#111315] flex items-center gap-2">
+                      <ListChecks className="w-5 h-5 text-indigo-600" />
                       <span>Evaluation Review & Preview</span>
                     </h3>
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="text-xs text-[#55585C] mt-0.5 font-medium">
                       Review all team scores before submitting.
                     </p>
                   </div>
                   <button 
                     onClick={() => setShowPreviewModal(false)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                    className="p-1.5 rounded-lg text-[#55585C] hover:text-[#111315] hover:bg-[#E5E4E2] transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
                 {/* Modal Content / Team Score List */}
-                <div className="p-5 overflow-y-auto space-y-3 flex-1">
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-slate-800/40 border border-slate-800 text-xs">
-                    <div className="text-slate-300 font-medium">
-                      Scored: <strong className={votedCount > 0 ? 'text-emerald-400' : 'text-amber-400'}>{votedCount} / {requiredCount} Teams</strong>
+                <div className="p-5 overflow-y-auto space-y-3 flex-1 bg-white">
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-[#F1F0EE] border border-[#C9C9C9] text-xs">
+                    <div className="text-[#111315] font-semibold">
+                      Scored: <strong className={votedCount > 0 ? 'text-emerald-700' : 'text-amber-700'}>{votedCount} / {requiredCount} Teams</strong>
                     </div>
                     {votedCount > 0 ? (
-                      <span className="text-emerald-400 font-bold flex items-center gap-1">
+                      <span className="text-emerald-700 font-bold flex items-center gap-1">
                         <CheckCircle2 className="w-4 h-4" /> Ready to submit {votedCount} score{votedCount > 1 ? 's' : ''}
                       </span>
                     ) : (
-                      <span className="text-rose-400 font-bold flex items-center gap-1">
+                      <span className="text-rose-700 font-bold flex items-center gap-1">
                         <AlertTriangle className="w-4 h-4" /> No scores entered yet
                       </span>
                     )}
                   </div>
 
-                  <div className="divide-y divide-slate-800/80 rounded-xl border border-slate-800 bg-slate-900/30 overflow-hidden">
+                  <div className="divide-y divide-[#C9C9C9] rounded-xl border border-[#C9C9C9] bg-white overflow-hidden">
                     {eligibleTeams.map((team, idx) => {
                       const hasScored = scores[team.id] !== undefined && scores[team.id] !== '';
                       const isSubmitted = submittedTeamIds.includes(team.id);
@@ -738,34 +738,34 @@ export default function VoterEvaluationView({ user, onLogout }) {
                       return (
                         <div 
                           key={team.id} 
-                          className="p-3.5 flex items-center justify-between gap-4 hover:bg-slate-800/30 transition-colors"
+                          className="p-3.5 flex items-center justify-between gap-4 hover:bg-[#F1F0EE] transition-colors"
                         >
                           <div className="flex items-start gap-3 min-w-0">
                             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${
                               isSubmitted
-                                ? 'bg-emerald-500/20 text-emerald-400'
+                                ? 'bg-emerald-100 text-emerald-800'
                                 : hasScored 
-                                ? 'bg-indigo-500/20 text-indigo-400' 
-                                : 'bg-slate-800 text-slate-500'
+                                ? 'bg-indigo-100 text-indigo-700' 
+                                : 'bg-[#E5E4E2] text-[#55585C]'
                             }`}>
                               {hasScored ? <Check className="w-4 h-4" /> : idx + 1}
                             </div>
                             <div className="min-w-0">
-                              <div className="text-sm font-bold text-white truncate flex items-center gap-2">
+                              <div className="text-sm font-bold text-[#111315] truncate flex items-center gap-2">
                                 <span>{team.team_name}</span>
-                                <span className="text-[10px] text-slate-500 font-mono">#{team.presentation_order || idx + 1}</span>
+                                <span className="text-[10px] text-[#55585C] font-mono">#{team.presentation_order || idx + 1}</span>
                                 {isSubmitted && (
-                                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300">
                                     Submitted
                                   </span>
                                 )}
                               </div>
-                              <div className="text-xs text-slate-400 truncate">{team.college_name}</div>
+                              <div className="text-xs text-[#55585C] truncate">{team.college_name}</div>
                               {hasScored && (
-                                <div className="text-[11px] text-slate-400 mt-1 flex flex-wrap gap-x-2">
+                                <div className="text-[11px] text-[#55585C] mt-1 flex flex-wrap gap-x-2">
                                   {getCriteriaList().map(c => (
-                                    <span key={c.key} className="text-slate-400">
-                                      {c.title.split('.')[0]}: <strong className="text-slate-200">{catData[c.key] || 0}</strong>
+                                    <span key={c.key} className="text-[#55585C]">
+                                      {c.title.split('.')[0]}: <strong className="text-[#111315]">{catData[c.key] || 0}</strong>
                                     </span>
                                   ))}
                                 </div>
@@ -776,11 +776,11 @@ export default function VoterEvaluationView({ user, onLogout }) {
                           <div className="flex items-center gap-3 shrink-0">
                             <div className="text-right">
                               {hasScored ? (
-                                <div className="font-mono font-bold text-base text-indigo-400">
-                                  {teamScore} <span className="text-[10px] text-slate-500">/ 100</span>
+                                <div className="font-mono font-bold text-base text-indigo-700">
+                                  {teamScore} <span className="text-[10px] text-[#55585C]">/ 100</span>
                                 </div>
                               ) : (
-                                <span className="text-xs font-medium text-slate-500 bg-slate-800 px-2 py-0.5 rounded">
+                                <span className="text-xs font-medium text-[#55585C] bg-[#F1F0EE] px-2 py-0.5 rounded">
                                   Not Scored
                                 </span>
                               )}
@@ -792,7 +792,7 @@ export default function VoterEvaluationView({ user, onLogout }) {
                                 setActiveTeamId(team.id);
                                 setShowPreviewModal(false);
                               }}
-                              className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                              className="p-1.5 rounded-lg bg-[#F1F0EE] border border-[#C9C9C9] text-[#55585C] hover:text-[#111315] hover:bg-[#E5E4E2] transition-colors"
                               title="Edit score for this team"
                             >
                               <Edit3 className="w-4 h-4" />
@@ -805,14 +805,14 @@ export default function VoterEvaluationView({ user, onLogout }) {
                 </div>
 
                 {/* Modal Footer */}
-                <div className="p-4 border-t border-slate-800 bg-slate-900/80 flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <div className="text-xs text-slate-400 text-center sm:text-left">
+                <div className="p-4 border-t border-[#C9C9C9] bg-[#F1F0EE] flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="text-xs text-[#55585C] font-medium text-center sm:text-left">
                     {votedCount === requiredCount ? (
-                      <span className="text-emerald-400">All teams scored! Click submit to record all evaluations.</span>
+                      <span className="text-emerald-700 font-bold">All teams scored! Click submit to record all evaluations.</span>
                     ) : votedCount > 0 ? (
-                      <span className="text-slate-300">Ready to submit {votedCount} scored team(s).</span>
+                      <span className="text-[#111315]">Ready to submit {votedCount} scored team(s).</span>
                     ) : (
-                      <span className="text-amber-400 font-semibold">Please score at least one team before submitting.</span>
+                      <span className="text-amber-800 font-bold">Please score at least one team before submitting.</span>
                     )}
                   </div>
 

@@ -1327,9 +1327,9 @@ app.use((req, res, next) => {
 });
 
 // Start Express Server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`====================================================`);
-  console.log(` National PPT Evaluation Server running on port ${PORT}`);
+  console.log(` National PPT Evaluation Server running on port ${PORT} (host: 0.0.0.0)`);
   console.log(`====================================================`);
 });
 

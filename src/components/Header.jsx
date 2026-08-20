@@ -28,7 +28,7 @@ export default function Header({ user, currentView, setCurrentView, eventState, 
   };
 
   return (
-    <header className={`sticky top-0 z-40 ${isAdmin ? 'bg-[#0B1120]' : 'surface-panel border-b border-slate-800/50 px-4'} py-3`}>
+    <header className={`sticky top-0 z-40 ${isAdmin ? 'bg-[#0B1120]' : 'surface-panel border-b border-[#C9C9C9] px-4'} py-3`}>
       <div className={`flex items-center justify-between gap-3 ${isAdmin ? 'px-6 border-b border-slate-800/60 pb-3' : 'max-w-7xl mx-auto'}`}>
         
         {/* Left side: Branding for Non-Admins, Greeting for Admins */}
@@ -40,8 +40,8 @@ export default function Header({ user, currentView, setCurrentView, eventState, 
             </div>
           ) : (
             <div className="flex flex-col">
-              <h1 className="text-xl font-bold text-white tracking-tight">EduInspire’26</h1>
-              <span className="text-[10px] text-slate-400 uppercase tracking-widest">Voting Portal</span>
+              <h1 className="text-xl font-black text-[#111315] tracking-tight">EduInspire’26</h1>
+              <span className="text-[10px] text-[#55585C] uppercase tracking-widest font-bold">Voting Portal</span>
             </div>
           )}
         </div>
@@ -110,8 +110,8 @@ export default function Header({ user, currentView, setCurrentView, eventState, 
           {user && (
             <div className={`flex items-center gap-3 ${isAdmin ? 'pl-4 border-l border-slate-800/60' : ''}`}>
               <div className="hidden sm:block text-right">
-                <div className="text-[13px] font-semibold text-slate-200">{user.name || user.userId}</div>
-                <div className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">{user.role}</div>
+                <div className={`text-[13px] font-semibold ${isAdmin ? 'text-slate-200' : 'text-[#111315]'}`}>{user.name || user.userId}</div>
+                <div className="text-[10px] text-indigo-600 font-bold uppercase tracking-wider">{user.role}</div>
               </div>
               <div className="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-sm border border-indigo-500">
                 {(user.name || user.userId).charAt(0).toUpperCase()}
@@ -121,7 +121,7 @@ export default function Header({ user, currentView, setCurrentView, eventState, 
               {!isAdmin && (
                 <button
                   onClick={onLogout}
-                  className="ml-2 p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
+                  className="ml-2 p-2 rounded-lg text-[#55585C] hover:text-rose-600 hover:bg-rose-50 border border-[#C9C9C9] transition-all"
                   title="Log Out"
                 >
                   <LogOut className="w-4 h-4" />

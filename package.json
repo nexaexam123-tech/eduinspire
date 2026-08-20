@@ -12,6 +12,9 @@
     "lint": "oxlint",
     "preview": "vite preview"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "better-sqlite3": "^13.0.3",
