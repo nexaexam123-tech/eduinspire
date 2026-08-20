@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Users, Gavel, UserCheck, Key, UploadCloud, Check, X, Mail, Edit2, Trash2, AlertTriangle } from 'lucide-react';
+import { Users, Gavel, UserCheck, Key, UploadCloud, Check, X, Mail, Edit2, Trash2, AlertTriangle, Shuffle, Trophy } from 'lucide-react';
 
 export default function UserDetailsView() {
   const [users, setUsers] = useState([]);
@@ -129,6 +129,34 @@ export default function UserDetailsView() {
     );
   }
 
+  // ── Tie Breaker state ──
+  const [tbTeam1, setTbTeam1] = useState('');
+  const [tbTeam2, setTbTeam2] = useState('');
+  const [tbWinner, setTbWinner] = useState(null);
+  const [tbSpinning, setTbSpinning] = useState(false);
+  const [tbDisplay, setTbDisplay] = useState('');
+
+  const handleTieBreaker = () => {
+    if (!tbTeam1.trim() || !tbTeam2.trim()) return;
+    setTbWinner(null);
+    setTbSpinning(true);
+    setTbDisplay('');
+    const teams = [tbTeam1.trim(), tbTeam2.trim()];
+    let count = 0;
+    const total = 20;
+    const interval = setInterval(() => {
+      setTbDisplay(teams[count % 2]);
+      count++;
+      if (count >= total) {
+        clearInterval(interval);
+        const winner = teams[Math.floor(Math.random() * 2)];
+        setTbDisplay(winner);
+        setTbWinner(winner);
+        setTbSpinning(false);
+      }
+    }, 100);
+  };
+
   return (
     <div className="space-y-4">
 
@@ -167,9 +195,9 @@ export default function UserDetailsView() {
         </div>
       )}
 
-      <div className="overflow-hidden flex flex-col min-h-[50vh]">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col min-h-[50vh]">
         {/* Tabs */}
-        <div className="border-b border-slate-700/40 px-4 pt-4 flex gap-4 overflow-x-auto">
+        <div className="border-b border-slate-200 px-4 pt-4 flex gap-4 overflow-x-auto bg-slate-50">
           {[
             { id: 'JUDGE', label: 'Judges', icon: Gavel },
             { id: 'PARTICIPANT', label: 'Participants', icon: UserCheck },
@@ -183,8 +211,8 @@ export default function UserDetailsView() {
                 onClick={() => { setActiveTab(tab.id); setEditingEmailUserId(null); setEmailMessage(null); setDeleteMessage(null); }}
                 className={`flex items-center gap-2 pb-3 border-b-2 font-semibold text-sm transition-colors whitespace-nowrap ${
                   isActive
-                    ? 'border-indigo-500 text-indigo-400'
-                    : 'border-transparent text-slate-500 hover:text-slate-300 hover:border-slate-700'
+                    ? 'border-indigo-600 text-indigo-700'
+                    : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-400'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -195,14 +223,14 @@ export default function UserDetailsView() {
         </div>
 
         {/* Toolbar */}
-        <div className="p-4 border-b border-slate-700/40 flex items-center justify-between">
-          <p className="text-sm text-slate-400 font-medium">
-            Showing <span className="text-white">{filteredUsers.length}</span> {activeTab.toLowerCase()} accounts
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white">
+          <p className="text-sm text-slate-600 font-semibold">
+            Showing <span className="text-slate-950 font-extrabold">{filteredUsers.length}</span> {activeTab.toLowerCase()} accounts
           </p>
           <div className="flex items-center gap-3">
             <button 
               onClick={() => window.location.href = '/api/users/export'} 
-              className="btn-secondary py-2 text-xs flex items-center gap-1"
+              className="btn-secondary py-2 text-xs flex items-center gap-1 text-slate-800 border-slate-300"
             >
               <Users className="w-4 h-4" /> Export Users
             </button>
@@ -219,17 +247,17 @@ export default function UserDetailsView() {
 
         {/* Table */}
         <div className="flex-1 overflow-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-[#172033] text-slate-400 text-xs uppercase tracking-wider sticky top-0 z-10">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead className="bg-slate-100 text-slate-800 text-xs uppercase tracking-wider sticky top-0 z-10 border-b border-slate-300">
               <tr>
-                <th className="py-1.5 px-3 font-medium">Email / Contact</th>
-                <th className="py-1.5 px-3 font-medium">{activeTab === 'AUDIENCE' ? 'Voter ID' : 'User ID'}</th>
-                {(activeTab === 'PARTICIPANT' || activeTab === 'JUDGE') && <th className="py-1.5 px-3 font-medium">Password</th>}
-                <th className="py-1.5 px-3 font-medium">Role</th>
-                <th className="py-1.5 px-3 text-center font-medium">Actions</th>
+                <th className="py-2.5 px-3 font-extrabold">Email / Contact</th>
+                <th className="py-2.5 px-3 font-extrabold">{activeTab === 'AUDIENCE' ? 'Voter ID' : 'User ID'}</th>
+                {(activeTab === 'PARTICIPANT' || activeTab === 'JUDGE') && <th className="py-2.5 px-3 font-extrabold">Password</th>}
+                <th className="py-2.5 px-3 font-extrabold">Role</th>
+                <th className="py-2.5 px-3 text-center font-extrabold">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/50">
+            <tbody className="divide-y divide-slate-100">
               {filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan={(activeTab === 'PARTICIPANT' || activeTab === 'JUDGE') ? 5 : 4} className="py-6 text-center">
@@ -241,9 +269,9 @@ export default function UserDetailsView() {
                 </tr>
               ) : (
                 filteredUsers.map(user => (
-                  <tr key={user.id} className="hover:bg-slate-800/30 transition-colors group">
+                  <tr key={user.id} className="hover:bg-indigo-50/40 transition-colors group">
                     {/* Email column with inline edit */}
-                    <td className="py-2 px-3 text-slate-200">
+                    <td className="py-2 px-3 text-slate-800">
                       {editingEmailUserId === user.user_id ? (
                         <div className="flex items-center gap-2">
                           <Mail className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
@@ -269,9 +297,9 @@ export default function UserDetailsView() {
                       ) : (
                         <div className="flex items-center gap-2">
                           {user.email ? (
-                            <span className="font-medium text-slate-200">{user.email}</span>
+                            <span className="font-semibold text-slate-900">{user.email}</span>
                           ) : (
-                            <span className="text-slate-500 italic text-xs">Not provided</span>
+                            <span className="text-slate-400 italic text-xs">Not provided</span>
                           )}
                           <button
                             onClick={() => startEditEmail(user)}
@@ -285,15 +313,15 @@ export default function UserDetailsView() {
                     </td>
 
                     <td className="py-2 px-3">
-                      <span className="font-mono text-xs text-indigo-400 font-bold">{user.user_id}</span>
+                      <span className="font-mono text-xs text-indigo-700 font-bold">{user.user_id}</span>
                     </td>
 
                     {/* Password col — for Participants and Judges */}
                     {(activeTab === 'PARTICIPANT' || activeTab === 'JUDGE') && (
                       <td className="py-2 px-3">
                         <div className="flex items-center gap-2">
-                          <Key className="w-3.5 h-3.5 text-slate-500" />
-                          <span className="font-mono text-xs bg-slate-900 border border-slate-800 px-2 py-0.5 rounded text-slate-300 tracking-wider">
+                          <Key className="w-3.5 h-3.5 text-slate-400" />
+                          <span className="font-mono text-xs bg-slate-100 border border-slate-300 px-2 py-0.5 rounded text-slate-900 font-bold tracking-wider">
                             {user.access_code}
                           </span>
                         </div>
@@ -325,6 +353,79 @@ export default function UserDetailsView() {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* ── Tie Breaker Section ── */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
+            <Shuffle className="w-5 h-5 text-indigo-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-extrabold text-slate-950">Tie Breaker</h3>
+            <p className="text-xs text-slate-500 font-medium">Enter two team names and let randomness decide the winner</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">Team 1</label>
+            <input
+              type="text"
+              placeholder="e.g. Team Alpha / IIT Madras"
+              value={tbTeam1}
+              onChange={(e) => { setTbTeam1(e.target.value); setTbWinner(null); setTbDisplay(''); }}
+              className="w-full px-3.5 py-2.5 bg-white border-2 border-slate-300 rounded-xl text-slate-950 font-semibold text-sm focus:border-indigo-600 focus:outline-none shadow-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">Team 2</label>
+            <input
+              type="text"
+              placeholder="e.g. Team Beta / Anna University"
+              value={tbTeam2}
+              onChange={(e) => { setTbTeam2(e.target.value); setTbWinner(null); setTbDisplay(''); }}
+              className="w-full px-3.5 py-2.5 bg-white border-2 border-slate-300 rounded-xl text-slate-950 font-semibold text-sm focus:border-indigo-600 focus:outline-none shadow-sm"
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center gap-4">
+          <button
+            onClick={handleTieBreaker}
+            disabled={tbSpinning || !tbTeam1.trim() || !tbTeam2.trim()}
+            className="btn-primary px-8 py-3 text-base font-extrabold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <Shuffle className={`w-5 h-5 ${tbSpinning ? 'animate-spin' : ''}`} />
+            {tbSpinning ? 'Picking...' : 'Pick Random Winner'}
+          </button>
+
+          {(tbSpinning || tbWinner) && (
+            <div className={`w-full max-w-md rounded-2xl border-2 p-6 text-center transition-all ${
+              tbWinner
+                ? 'bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-400 shadow-lg shadow-indigo-100'
+                : 'bg-slate-50 border-slate-300'
+            }`}>
+              {tbWinner ? (
+                <>
+                  <Trophy className="w-10 h-10 text-amber-500 mx-auto mb-3" />
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">🎉 Winner!</p>
+                  <p className="text-2xl font-extrabold text-slate-950">{tbWinner}</p>
+                  <p className="text-xs text-slate-500 mt-2">Selected by random draw</p>
+                  <button
+                    onClick={() => { setTbWinner(null); setTbDisplay(''); setTbTeam1(''); setTbTeam2(''); }}
+                    className="mt-4 text-xs text-indigo-600 hover:underline font-semibold"
+                  >Reset</button>
+                </>
+              ) : (
+                <>
+                  <Shuffle className="w-8 h-8 text-indigo-400 mx-auto mb-3 animate-spin" />
+                  <p className="text-xl font-extrabold text-indigo-700">{tbDisplay || '...'}</p>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
