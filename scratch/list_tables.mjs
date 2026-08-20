@@ -1,4 +1,5 @@
-import db from 'better-sqlite3';
-const d = db('server/database.sqlite');
-const tables = d.prepare("SELECT name, sql FROM sqlite_master WHERE type='table'").all();
+import db from '../server/db.js';
+const [tables] = await db.query("SHOW TABLES");
 console.log(JSON.stringify(tables, null, 2));
+process.exit(0);
+
