@@ -155,7 +155,10 @@ export default function LoginView({ onLoginSuccess }) {
             <Sparkles className="w-3.5 h-3.5" />
             <span>Event Evaluation Platform</span>
           </div>
-          <h1 className="text-4xl font-extrabold text-[#F5F5F5] tracking-tight">
+          <h1 
+            className="text-4xl tracking-tight"
+            style={{ color: '#111315', opacity: 1, fontWeight: 700, WebkitTextFillColor: 'initial' }}
+          >
             eduinspire
           </h1>
         </div>
