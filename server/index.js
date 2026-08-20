@@ -1479,6 +1479,3 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(` National PPT Evaluation Server running on port ${PORT} (host: 0.0.0.0)`);
   console.log(`====================================================`);
 });
-
-});
-
