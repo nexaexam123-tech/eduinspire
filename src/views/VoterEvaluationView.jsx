@@ -1,16 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Lock, CheckCircle2, AlertTriangle, Send, LogOut, Check } from 'lucide-react';
-
-const CATEGORIES = [
-  { id: 'c1', label: '1. Student Impact', max: 20 },
-  { id: 'c2', label: '2. Faculty Impact', max: 10 },
-  { id: 'c3', label: '3. Institutional / Administrative Impact', max: 10 },
-  { id: 'c4', label: '4. Social / Community Impact', max: 10 },
-  { id: 'c5', label: '5. Innovation & Distinctiveness', max: 20 },
-  { id: 'c6', label: '6. Planning & Implementation', max: 15 },
-  { id: 'c7', label: '7. Evidence of Outcomes', max: 10 },
-  { id: 'c8', label: '8. Learning & Replicability', max: 5 },
-];
+import SliderScore, { getCriteriaList } from '../components/SliderScore';
 
 export default function VoterEvaluationView({ user, onLogout }) {
   const [eventData, setEventData] = useState(null);
@@ -70,7 +60,7 @@ export default function VoterEvaluationView({ user, onLogout }) {
       teamScores[catId] = val;
       
       setScores(prevScores => {
-        const total = CATEGORIES.reduce((sum, cat) => sum + (parseInt(teamScores[cat.id]) || 0), 0);
+        const total = getCriteriaList().reduce((sum, cat) => sum + (parseInt(teamScores[cat.key]) || 0), 0);
         return { ...prevScores, [teamId]: total };
       });
 
@@ -219,9 +209,17 @@ export default function VoterEvaluationView({ user, onLogout }) {
                 <h3 className="text-base font-bold text-white">Voting Status</h3>
                 <p className="text-xs text-slate-400 mt-1">{requiredCount} votes required</p>
               </div>
+              {state?.timer_running === 1 && (
+                <div className="text-right ml-4">
+                  <div className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Presentation Timer</div>
+                  <div className="text-xl font-mono font-bold text-rose-400 animate-pulse-subtle">
+                    {formatTime(state?.timer_remaining)}
+                  </div>
+                </div>
+              )}
               {state?.voting_timer_running === 1 && (
-                <div className="text-right">
-                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Time Remaining</div>
+                <div className="text-right ml-4">
+                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Voting Timer</div>
                   <div className="text-xl font-mono font-bold text-indigo-400 animate-pulse-subtle">
                     {formatTime(state?.voting_timer_remaining)}
                   </div>
@@ -293,38 +291,31 @@ export default function VoterEvaluationView({ user, onLogout }) {
                       </div>
                     </div>
 
-                    <div className="space-y-4 pt-4 border-t border-slate-700/50 mt-4">
-                      {CATEGORIES.map(cat => {
-                        const catVal = categoryScores[team.id]?.[cat.id];
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8 pt-4 border-t border-slate-700/50 mt-4">
+                      {getCriteriaList().map(crit => {
+                        const catVal = categoryScores[team.id]?.[crit.key];
                         return (
-                          <div key={cat.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                            <label className="text-sm text-slate-300 font-medium flex-1">{cat.label}</label>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-xs text-slate-500">Enter marks:</span>
-                              <input
-                                type="number"
-                                min="0"
-                                max={cat.max}
-                                value={catVal !== undefined ? catVal : ''}
-                                onChange={(e) => handleCategoryChange(team.id, cat.id, cat.max, e.target.value)}
-                                className="w-16 bg-[#172033] border border-slate-700 rounded-lg p-1.5 text-center text-white font-mono text-sm focus:border-indigo-500 focus:outline-none transition-colors"
-                                placeholder="0"
-                              />
-                              <span className="text-xs text-slate-500 font-mono w-8">/ {cat.max}</span>
-                            </div>
-                          </div>
+                          <SliderScore
+                            key={crit.key}
+                            categoryKey={crit.key}
+                            title={crit.title}
+                            max={crit.max}
+                            description={crit.description}
+                            value={catVal !== undefined ? catVal : ''}
+                            onChange={(catKey, val) => handleCategoryChange(team.id, catKey, crit.max, val)}
+                          />
                         );
                       })}
-                      <div className="flex justify-between items-center pt-3 border-t border-slate-700/50 mt-2">
-                        <span className="text-sm font-bold text-white">TOTAL:</span>
-                        <div className="flex items-center gap-2">
+                    </div>
+                    <div className="flex justify-between items-center pt-5 border-t border-slate-700/50 mt-6">
+                      <span className="text-sm font-bold text-white">TOTAL SCORE:</span>
+                      <div className="flex items-center gap-2">
                           <span className="text-lg font-mono font-bold text-indigo-400">{currentScore}</span>
                           <span className="text-xs text-slate-500 font-mono w-8">/ 100</span>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
               );
             })}
 

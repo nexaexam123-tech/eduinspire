@@ -29,11 +29,15 @@ export default function AdminDashboard({ onNavigate }) {
   // Client-side countdown display (ticks every second between server polls)
   const [displaySeconds, setDisplaySeconds] = useState(null);
 
-  // Voting Timer Settings
+  const [isEditingTimer, setIsEditingTimer] = useState(false);
   const [vHours, setVHours] = useState(0);
   const [vMinutes, setVMinutes] = useState(20);
   const [vSeconds, setVSeconds] = useState(0);
-  const [isEditingTimer, setIsEditingTimer] = useState(false);
+
+  const [isEditingPTimer, setIsEditingPTimer] = useState(false);
+  const [pHours, setPHours] = useState(0);
+  const [pMinutes, setPMinutes] = useState(7);
+  const [pSeconds, setPSeconds] = useState(0);
 
   const fetchDashboard = async (syncDisplay = false) => {
     try {
@@ -144,6 +148,28 @@ export default function AdminDashboard({ onNavigate }) {
       }
 
       fetchDashboard(true);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handlePresentationAction = async (action) => {
+    setActionLoading(true);
+    try {
+      if (action === 'TOGGLE') {
+        await fetch('/api/event/presentation/timer', { method: 'POST' });
+      } else if (action === 'EDIT') {
+        const totalSec = pHours * 3600 + pMinutes * 60 + pSeconds;
+        await fetch('/api/event/presentation/set-timer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ timerSeconds: totalSec })
+        });
+        setIsEditingPTimer(false);
+      }
+      await fetchDashboard(true);
     } catch (err) {
       console.error(err);
     } finally {
@@ -289,73 +315,141 @@ export default function AdminDashboard({ onNavigate }) {
           </div>
         )}
         
-        {/* Timer Control Bar */}
-        <div className="p-5 flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-between bg-slate-900/20">
-          <div className="space-y-1">
-            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Voting Timer Remaining</h4>
-            <div className="text-4xl sm:text-5xl font-mono font-bold tracking-tight text-white">
-              {isVotingOpen ? formatTime(displaySeconds) : '--:--'}
-            </div>
-            
-            {isEditingTimer ? (
-              <div className="flex items-center gap-2 mt-3 animate-fade-up">
-                <input
-                  type="number" min="0" max="23"
-                  className="form-input w-16 text-center text-xs py-1"
-                  value={vHours} onChange={e => setVHours(Number(e.target.value))}
-                />
-                <span className="text-slate-500 font-bold">:</span>
-                <input
-                  type="number" min="0" max="59"
-                  className="form-input w-16 text-center text-xs py-1"
-                  value={vMinutes} onChange={e => setVMinutes(Number(e.target.value))}
-                />
-                <span className="text-slate-500 font-bold">:</span>
-                <input
-                  type="number" min="0" max="59"
-                  className="form-input w-16 text-center text-xs py-1"
-                  value={vSeconds} onChange={e => setVSeconds(Number(e.target.value))}
-                />
-                <button
-                  disabled={actionLoading}
-                  onClick={() => handleVotingAction(isVotingOpen ? 'EDIT' : 'START')}
-                  className="btn-primary text-xs py-1 px-3 ml-1"
-                >
-                  Save
-                </button>
-                <button onClick={() => setIsEditingTimer(false)} className="btn-secondary text-xs py-1 px-3">
-                  Cancel
-                </button>
+        {/* Timer Control Bars */}
+        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-800/60 bg-slate-900/20">
+          
+          {/* Presentation Timer */}
+          <div className="p-5 flex flex-col xl:flex-row gap-6 items-start xl:items-center justify-between">
+            <div className="space-y-1">
+              <h4 className="text-xs font-semibold text-rose-500 uppercase tracking-wider">Presentation Timer</h4>
+              <div className="text-4xl font-mono font-bold tracking-tight text-white">
+                {formatTime(eventState?.timer_remaining)}
               </div>
-            ) : (
-              <button onClick={() => setIsEditingTimer(true)} className="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1 mt-1">
-                <Edit2 className="w-3.5 h-3.5" /> Edit Timer Duration
+              
+              {isEditingPTimer ? (
+                <div className="flex items-center gap-2 mt-3 animate-fade-up">
+                  <input
+                    type="number" min="0" max="23"
+                    className="form-input w-14 text-center text-xs py-1"
+                    value={pHours} onChange={e => setPHours(Number(e.target.value))}
+                  />
+                  <span className="text-slate-500 font-bold">:</span>
+                  <input
+                    type="number" min="0" max="59"
+                    className="form-input w-14 text-center text-xs py-1"
+                    value={pMinutes} onChange={e => setPMinutes(Number(e.target.value))}
+                  />
+                  <span className="text-slate-500 font-bold">:</span>
+                  <input
+                    type="number" min="0" max="59"
+                    className="form-input w-14 text-center text-xs py-1"
+                    value={pSeconds} onChange={e => setPSeconds(Number(e.target.value))}
+                  />
+                  <button
+                    disabled={actionLoading}
+                    onClick={() => handlePresentationAction('EDIT')}
+                    className="btn-primary text-xs py-1 px-3 ml-1"
+                  >
+                    Save
+                  </button>
+                  <button onClick={() => setIsEditingPTimer(false)} className="btn-secondary text-xs py-1 px-3">
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => setIsEditingPTimer(true)} className="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1 mt-1">
+                  <Edit2 className="w-3.5 h-3.5" /> Edit Duration
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2 w-full xl:w-auto">
+              <button
+                disabled={actionLoading || isEditingPTimer}
+                onClick={() => handlePresentationAction('TOGGLE')}
+                className={`py-2 px-5 text-sm font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors ${
+                  eventState?.timer_running === 1 
+                    ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 border border-rose-500/30'
+                    : 'bg-indigo-500 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                }`}
+              >
+                {eventState?.timer_running === 1 ? (
+                  <><Pause className="w-4 h-4" /> Pause Timer</>
+                ) : (
+                  <><Play className="w-4 h-4" /> Start Timer</>
+                )}
               </button>
-            )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {!isVotingOpen ? (
-              <button
-                disabled={actionLoading || isEditingTimer}
-                onClick={() => handleVotingAction('START')}
-                className="btn-success py-2.5 px-6 text-sm"
-              >
-                <Play className="w-4 h-4" /> Start Global Voting
-              </button>
-            ) : (
-              <button
-                disabled={actionLoading || isEditingTimer}
-                onClick={() => {
-                  if (window.confirm('Are you sure you want to stop voting? This will lock all current votes.')) {
-                    handleVotingAction('STOP');
-                  }
-                }}
-                className="btn-danger py-2.5 px-6 text-sm"
-              >
-                <Pause className="w-4 h-4" /> Stop Voting
-              </button>
-            )}
+          {/* Voting Timer */}
+          <div className="p-5 flex flex-col xl:flex-row gap-6 items-start xl:items-center justify-between">
+            <div className="space-y-1">
+              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Voting Timer</h4>
+              <div className="text-4xl font-mono font-bold tracking-tight text-white">
+                {isVotingOpen ? formatTime(displaySeconds) : '--:--'}
+              </div>
+              
+              {isEditingTimer ? (
+                <div className="flex items-center gap-2 mt-3 animate-fade-up">
+                  <input
+                    type="number" min="0" max="23"
+                    className="form-input w-14 text-center text-xs py-1"
+                    value={vHours} onChange={e => setVHours(Number(e.target.value))}
+                  />
+                  <span className="text-slate-500 font-bold">:</span>
+                  <input
+                    type="number" min="0" max="59"
+                    className="form-input w-14 text-center text-xs py-1"
+                    value={vMinutes} onChange={e => setVMinutes(Number(e.target.value))}
+                  />
+                  <span className="text-slate-500 font-bold">:</span>
+                  <input
+                    type="number" min="0" max="59"
+                    className="form-input w-14 text-center text-xs py-1"
+                    value={vSeconds} onChange={e => setVSeconds(Number(e.target.value))}
+                  />
+                  <button
+                    disabled={actionLoading}
+                    onClick={() => handleVotingAction(isVotingOpen ? 'EDIT' : 'START')}
+                    className="btn-primary text-xs py-1 px-3 ml-1"
+                  >
+                    Save
+                  </button>
+                  <button onClick={() => setIsEditingTimer(false)} className="btn-secondary text-xs py-1 px-3">
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => setIsEditingTimer(true)} className="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1 mt-1">
+                  <Edit2 className="w-3.5 h-3.5" /> Edit Duration
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2 w-full xl:w-auto">
+              {!isVotingOpen ? (
+                <button
+                  disabled={actionLoading || isEditingTimer}
+                  onClick={() => handleVotingAction('START')}
+                  className="btn-success py-2 px-5 text-sm w-full"
+                >
+                  <Play className="w-4 h-4" /> Start Global Voting
+                </button>
+              ) : (
+                <button
+                  disabled={actionLoading || isEditingTimer}
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to stop voting? This will lock all current votes.')) {
+                      handleVotingAction('STOP');
+                    }
+                  }}
+                  className="btn-danger py-2 px-5 text-sm w-full"
+                >
+                  <Pause className="w-4 h-4" /> Stop Voting
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
