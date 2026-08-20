@@ -163,19 +163,19 @@ export default function UserDetailsView() {
     let sampleData, sheetName, fileName;
     if (isAudience) {
       sampleData = [
-        { "Email": "student01@college.edu", "Name": "Riya Sharma" },
-        { "Email": "student02@college.edu", "Name": "Arjun Mehta" },
-        { "Email": "student03@college.edu", "Name": "Priya Nair" },
-        { "Email": "student04@college.edu", "Name": "Karthik Rajan" },
+        { "Name": "Riya Sharma", "Email": "student01@college.edu", "Department": "Computer Science & Engineering", "College Name": "IIT Madras" },
+        { "Name": "Arjun Mehta", "Email": "student02@college.edu", "Department": "Electronics & Communication", "College Name": "Anna University" },
+        { "Name": "Priya Nair", "Email": "student03@college.edu", "Department": "Biotechnology", "College Name": "BITS Pilani" },
+        { "Name": "Karthik Rajan", "Email": "student04@college.edu", "Department": "Information Technology", "College Name": "Delhi Technological University" },
       ];
       sheetName = 'Audience_Template';
       fileName = 'EduInspire_Audience_Sample_Template.xlsx';
     } else {
       sampleData = [
-        { "Team Code": "TM001", "Faculty Name": "Dr. Ramesh Kumar", "Email": "ramesh@iitm.ac.in" },
-        { "Team Code": "TM001", "Faculty Name": "Prof. Anitha Sundaram", "Email": "anitha@iitm.ac.in" },
-        { "Team Code": "TM002", "Faculty Name": "Dr. Senthil Nathan", "Email": "senthil@annauniv.edu" },
-        { "Team Code": "TM002", "Faculty Name": "Dr. Priya Venkatesh", "Email": "priya@annauniv.edu" },
+        { "Team Code": "TM001", "Faculty Name": "Dr. Ramesh Kumar", "Email": "ramesh@iitm.ac.in", "Department": "Computer Science & Engineering", "College Name": "IIT Madras" },
+        { "Team Code": "TM001", "Faculty Name": "Prof. Anitha Sundaram", "Email": "anitha@iitm.ac.in", "Department": "Computer Science & Engineering", "College Name": "IIT Madras" },
+        { "Team Code": "TM002", "Faculty Name": "Dr. Senthil Nathan", "Email": "senthil@annauniv.edu", "Department": "Electrical & Electronics Engg", "College Name": "Anna University, Chennai" },
+        { "Team Code": "TM002", "Faculty Name": "Dr. Priya Venkatesh", "Email": "priya@annauniv.edu", "Department": "Electrical & Electronics Engg", "College Name": "Anna University, Chennai" },
       ];
       sheetName = 'Participants_Template';
       fileName = 'EduInspire_Participants_Sample_Template.xlsx';
@@ -184,8 +184,8 @@ export default function UserDetailsView() {
     const workbook = xlsx.utils.book_new();
     xlsx.utils.book_append_sheet(workbook, worksheet, sheetName);
     worksheet['!cols'] = isAudience
-      ? [{ wch: 35 }, { wch: 25 }]
-      : [{ wch: 12 }, { wch: 30 }, { wch: 35 }];
+      ? [{ wch: 25 }, { wch: 35 }, { wch: 35 }, { wch: 35 }]
+      : [{ wch: 12 }, { wch: 28 }, { wch: 35 }, { wch: 35 }, { wch: 35 }];
     xlsx.writeFile(workbook, fileName);
   };
 
