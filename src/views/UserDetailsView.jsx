@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Users, Gavel, UserCheck, Key, UploadCloud, Check, X, Mail, Edit2, Trash2, AlertTriangle, Shuffle, Trophy } from 'lucide-react';
+import { Users, Gavel, UserCheck, Key, UploadCloud, Check, X, Mail, Edit2, Trash2, AlertTriangle, Shuffle, Trophy, Download } from 'lucide-react';
+import * as xlsx from 'xlsx';
 
 export default function UserDetailsView() {
   const [users, setUsers] = useState([]);
@@ -143,7 +144,7 @@ export default function UserDetailsView() {
     setTbDisplay('');
     const teams = [tbTeam1.trim(), tbTeam2.trim()];
     let count = 0;
-    const total = 20;
+    const total = 30;
     const interval = setInterval(() => {
       setTbDisplay(teams[count % 2]);
       count++;
@@ -154,19 +155,50 @@ export default function UserDetailsView() {
         setTbWinner(winner);
         setTbSpinning(false);
       }
-    }, 100);
+    }, 80);
+  };
+
+  const downloadSampleXLSX = () => {
+    const isAudience = activeTab === 'AUDIENCE';
+    let sampleData, sheetName, fileName;
+    if (isAudience) {
+      sampleData = [
+        { "Email": "student01@college.edu", "Name": "Riya Sharma" },
+        { "Email": "student02@college.edu", "Name": "Arjun Mehta" },
+        { "Email": "student03@college.edu", "Name": "Priya Nair" },
+        { "Email": "student04@college.edu", "Name": "Karthik Rajan" },
+      ];
+      sheetName = 'Audience_Template';
+      fileName = 'EduInspire_Audience_Sample_Template.xlsx';
+    } else {
+      sampleData = [
+        { "Team Code": "TM001", "Faculty Name": "Dr. Ramesh Kumar", "Email": "ramesh@iitm.ac.in" },
+        { "Team Code": "TM001", "Faculty Name": "Prof. Anitha Sundaram", "Email": "anitha@iitm.ac.in" },
+        { "Team Code": "TM002", "Faculty Name": "Dr. Senthil Nathan", "Email": "senthil@annauniv.edu" },
+        { "Team Code": "TM002", "Faculty Name": "Dr. Priya Venkatesh", "Email": "priya@annauniv.edu" },
+      ];
+      sheetName = 'Participants_Template';
+      fileName = 'EduInspire_Participants_Sample_Template.xlsx';
+    }
+    const worksheet = xlsx.utils.json_to_sheet(sampleData);
+    const workbook = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook, worksheet, sheetName);
+    worksheet['!cols'] = isAudience
+      ? [{ wch: 35 }, { wch: 25 }]
+      : [{ wch: 12 }, { wch: 30 }, { wch: 35 }];
+    xlsx.writeFile(workbook, fileName);
   };
 
   return (
     <div className="space-y-4">
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Users className="w-6 h-6 text-indigo-400" />
+          <h2 className="text-2xl font-extrabold text-slate-950 flex items-center gap-2.5">
+            <Users className="w-7 h-7 text-indigo-600" />
             <span>User Management</span>
           </h2>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-slate-700 font-medium text-sm mt-1">
             Manage authentication and details for Judges, Participants, and Audience.
           </p>
         </div>
@@ -237,7 +269,15 @@ export default function UserDetailsView() {
             {(activeTab === 'PARTICIPANT' || activeTab === 'AUDIENCE') && (
               <>
                 <input type="file" accept=".xlsx,.xls" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
-                <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="btn-secondary py-2 text-xs flex items-center gap-1">
+                <button
+                  onClick={downloadSampleXLSX}
+                  className="py-2 text-xs flex items-center gap-1.5 px-3 bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-200 hover:border-indigo-400 text-indigo-900 font-bold rounded-xl transition-all"
+                  title="Download sample Excel template"
+                >
+                  <Download className="w-3.5 h-3.5 text-indigo-700" />
+                  Sample .xlsx
+                </button>
+                <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="btn-secondary py-2 text-xs flex items-center gap-1 text-slate-900 font-bold border-slate-300">
                   {uploading ? <span className="animate-pulse">Uploading...</span> : <><UploadCloud className="w-4 h-4" /> Upload {activeTab === 'AUDIENCE' ? 'Audience' : 'Participants'}</>}
                 </button>
               </>
